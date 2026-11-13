@@ -1,70 +1,82 @@
 
 
-<!doctype html>
+<!DOCTYPE html>
 
 <html lang="fr">
 
 <head>
 
-<meta charset="utf-8">
+<meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#123d68">
 
-<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mon Scanner Pro</title>
 
-<meta name="apple-mobile-web-app-title" content="Mon Scanner">
-
-<title>Mon Scanner</title>
-
-<link rel="manifest" href="manifest.webmanifest">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <style>
 
-body{margin:0;background:#f1f5f9;color:#0f172a;font:16px -apple-system,BlinkMacSystemFont,sans-serif}
+*{box-sizing:border-box}
 
-header{background:#0f172a;color:white;padding:22px 18px}
+body{margin:0;background:#eef3f8;color:#183047;font-family:Arial,sans-serif}
+
+header{background:#123d68;color:white;padding:18px;text-align:center}
 
 h1{margin:0;font-size:25px}
 
-main{max-width:650px;margin:auto;padding:16px}
+main{max-width:750px;margin:auto;padding:12px}
 
-.card{background:white;border-radius:18px;padding:18px;margin-bottom:15px;box-shadow:0 2px 12px #0001}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
 
-label{display:block;font-weight:650;margin:12px 0 6px}
+button{border:0;border-radius:9px;padding:11px;font-weight:bold;cursor:pointer;font-size:14px}
 
-input{box-sizing:border-box;width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px}
+nav button{background:white;color:#123d68}
 
-button{background:#2563eb;color:white;border:0;border-radius:11px;padding:13px 16px;font-weight:700;font-size:16px;margin-top:10px}
+nav button.active{background:#123d68;color:white}
 
-button.secondary{background:#334155}
+.card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px #0001}
 
-button.danger{background:#b91c1c}
+h2{font-size:19px;margin:0 0 12px}
 
-button:disabled{opacity:.5}
+label{display:block;font-weight:bold;font-size:13px;margin:10px 0 5px}
 
-#reader{width:100%;overflow:hidden;border-radius:12px}
+input{width:100%;padding:12px;border:1px solid #ccd6df;border-radius:9px;font-size:16px}
 
-#reader video{width:100%!important}
+.row{display:flex;gap:8px}
 
-small,.hint{color:#64748b}
+.row input{flex:1;min-width:0}
 
-li{list-style:none;padding:12px 0;border-bottom:1px solid #e2e8f0}
+.btn{background:#1664a2;color:white}
 
-ul{padding:0}
+.green{background:#15804e;color:white}
 
-.itemhead{font-weight:700}
+.red{background:#c63c3c;color:white}
 
-.actions{display:flex;gap:8px;flex-wrap:wrap}
+.gray{background:#e8edf2;color:#223a51}
 
-.actions button{font-size:13px;padding:9px}
+.full{width:100%;margin-top:10px}
 
-.status{min-height:20px;color:#166534}
+.hidden{display:none!important}
 
-.discountbox{background:#eff6ff;padding:14px;border-radius:12px;margin-top:15px}
+.product{border:1px solid #dbe4ed;border-radius:10px;padding:12px;margin:10px 0}
 
-.net{color:#166534;font-size:20px;font-weight:700}
+.small{font-size:13px;color:#617285;margin-top:6px}
+
+.price{font-weight:bold;color:#087044}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+
+.stat{background:#eaf2fa;padding:13px;border-radius:10px}
+
+.stat b{display:block;font-size:21px;margin-top:6px}
+
+.notice{background:#fff4d8;padding:10px;border-radius:8px;font-size:13px}
+
+.history{border-bottom:1px solid #e5eaf0;padding:10px 0}
+
+#reader{width:100%}
 
 </style>
 
@@ -74,529 +86,1175 @@ ul{padding:0}
 
 <header>
 
-<h1>▥ Mon Scanner</h1>
+<h1>📦 Mon Scanner Pro</h1>
 
-<div>Produits • Prix • Codes-barres • Remise</div>
+<p>Achats • Ventes • Stock • Bénéfices</p>
 
 </header>
 
 <main>
 
-<section class="card">
+<nav>
 
-<h2>Scanner un code-barres</h2>
+<button class="active" onclick="tab('stock')">📦 Stock</button>
 
-<p class="hint">Autorisez la caméra, puis visez le code-barres.</p>
+<button onclick="tab('achat')">🛒 Achat</button>
+
+<button onclick="tab('vente')">💰 Vente</button>
+
+<button onclick="tab('produits')">🏷️ Produits</button>
+
+<button onclick="tab('historique')">🧾 Historique</button>
+
+<button onclick="tab('sauvegarde')">💾 Données</button>
+
+</nav>
+
+<section id="stock" class="page">
+
+<div class="card">
+
+<h2>Tableau de bord</h2>
+
+<div class="stats">
+
+<div class="stat">Produits<b id="sProducts">0</b></div>
+
+<div class="stat">Pièces en stock<b id="sPieces">0</b></div>
+
+<div class="stat">Valeur du stock<b id="sValue">0</b></div>
+
+<div class="stat">Bénéfice réalisé<b id="sProfit">0</b></div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>Stock actuel</h2>
+
+<input id="search" placeholder="Rechercher un produit" oninput="renderStock()">
+
+<div id="stockList"></div>
+
+</div>
+
+</section>
+
+<section id="achat" class="page hidden">
+
+<div class="card">
+
+<h2>🛒 Nouvel achat</h2>
+
+<label>Code-barres</label>
+
+<div class="row">
+
+<input id="aCode" placeholder="Scanner ou saisir" oninput="lookup('a')">
+
+<button class="btn" onclick="scan('a')">📷</button>
+
+</div>
+
+<div id="aFound" class="small"></div>
+
+<label>Quantité achetée</label>
+
+<input id="aQty" type="number" min="1" step="1" value="1">
+
+<label>Prix d'achat unitaire (TND)</label>
+
+<input id="aPrice" type="number" min="0" step=".001">
+
+<button class="green full" onclick="purchase()">Enregistrer l'achat</button>
+
+</div>
+
+</section>
+
+<section id="vente" class="page hidden">
+
+<div class="card">
+
+<h2>💰 Nouvelle vente</h2>
+
+<label>Code-barres</label>
+
+<div class="row">
+
+<input id="vCode" placeholder="Scanner ou saisir" oninput="lookup('v')">
+
+<button class="btn" onclick="scan('v')">📷</button>
+
+</div>
+
+<div id="vFound" class="small"></div>
+
+<label>Quantité vendue</label>
+
+<input id="vQty" type="number" min="1" step="1" value="1">
+
+<div id="saleInfo" class="notice" style="margin-top:12px">
+
+Scannez un produit pour afficher le prix.
+
+</div>
+
+<button class="green full" onclick="sale()">Valider la vente</button>
+
+</div>
+
+</section>
+
+<section id="produits" class="page hidden">
+
+<div class="card">
+
+<h2>🏷️ Fiche produit</h2>
+
+<input type="hidden" id="oldCode">
+
+<label>Code-barres</label>
+
+<div class="row">
+
+<input id="pCode" placeholder="Code-barres">
+
+<button class="btn" onclick="scan('p')">📷</button>
+
+</div>
+
+<label>Nom du produit</label>
+
+<input id="pName" placeholder="Nom du produit">
+
+<label>Prix de vente (TND)</label>
+
+<input id="pPrice" type="number" min="0" step=".001">
+
+<label>Remise (%)</label>
+
+<input id="pDiscount" type="number" min="0" max="100" step=".01" value="0">
+
+<button class="green full" onclick="saveProduct()">Enregistrer le produit</button>
+
+<button class="gray full" onclick="resetForm()">Nouveau produit</button>
+
+</div>
+
+<div class="card">
+
+<h2>Mes produits</h2>
+
+<div id="productList"></div>
+
+</div>
+
+</section>
+
+<section id="historique" class="page hidden">
+
+<div class="card">
+
+<h2>🧾 Historique</h2>
+
+<div id="historyList"></div>
+
+</div>
+
+</section>
+
+<section id="sauvegarde" class="page hidden">
+
+<div class="card">
+
+<h2>💾 Sauvegarde</h2>
+
+<button class="btn full" onclick="exportJSON()">Exporter JSON</button>
+
+<label>Importer JSON</label>
+
+<input type="file" accept=".json,application/json" onchange="importJSON(event)">
+
+<p class="notice">Conservez une copie de vos données.</p>
+
+</div>
+
+</section>
+
+<div id="scanPanel" class="card hidden">
+
+<h2>📷 Scanner</h2>
 
 <div id="reader"></div>
 
-<div class="actions">
-
-<button id="start">Démarrer le scanner</button>
-
-<button id="stop" class="secondary" disabled>Arrêter</button>
+<button class="red full" onclick="stopScan()">Fermer la caméra</button>
 
 </div>
-
-<p id="status" class="status" aria-live="polite"></p>
-
-</section>
-
-<section class="card">
-
-<h2>Fiche produit</h2>
-
-<form id="form">
-
-<label for="code">Code-barres</label>
-
-<input id="code" required inputmode="numeric" placeholder="Scanner ou saisir le code">
-
-<label for="name">Nom du produit</label>
-
-<input id="name" required placeholder="Ex. Lait 1 L">
-
-<label for="price">Prix initial (TND)</label>
-
-<input id="price" required type="number" inputmode="decimal" min="0" step="0.001" placeholder="Ex. 10.000">
-
-<div class="discountbox">
-
-<label for="discount">Remise (%)</label>
-
-<input id="discount" type="number" inputmode="decimal" min="0" max="100" step="0.01" value="0">
-
-<p id="initial">Prix initial : —</p>
-
-<p id="saving">Montant remise : —</p>
-
-<p id="net" class="net">Prix après remise : —</p>
-
-</div>
-
-<button type="submit">Enregistrer le produit</button>
-
-</form>
-
-</section>
-
-<section class="card">
-
-<h2>Mes produits (<span id="count">0</span>)</h2>
-
-<input id="search" placeholder="Rechercher un nom ou un code" aria-label="Rechercher">
-
-<ul id="products"></ul>
-
-<div class="actions">
-
-<button id="export" class="secondary">Exporter JSON</button>
-
-<button id="importBtn" class="secondary">Importer JSON</button>
-
-<input type="file" id="importFile" accept="application/json,.json" hidden>
-
-</div>
-
-<p><small>Les données restent dans ce navigateur. Exportez une sauvegarde régulièrement.</small></p>
-
-</section>
 
 </main>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
 <script>
+
+const KEY="mon_scanner_pro_v1";
+
+let db={products:[],movements:[]};
+
+let scanner=null;
+
+let scanTarget=null;
 
 const $=id=>document.getElementById(id);
 
-const key='mon-scanner-products-v1';
+const num=v=>Number(v)||0;
 
-let products=[];
+const money=n=>(Number(n)||0).toFixed(3)+" TND";
+
+function safe(s){
+
+return String(s??"").replace(/[&<>"']/g,c=>({
+
+"&":"&amp;","<":"&lt;",">":"&gt;",
+
+'"':"&quot;","'":"&#39;"
+
+}[c]));
+
+}
+
+function normalize(p){
+
+return {
+
+code:String(
+
+p.code??p.barcode??p.codeBarre??
+
+p.codebarre??p.id??""
+
+).trim(),
+
+name:String(
+
+p.name??p.nom??p.designation??
+
+p.libelle??"Produit"
+
+),
+
+price:num(
+
+p.price??p.prix??p.prixVente??
+
+p.prix_vente
+
+),
+
+discount:num(
+
+p.discount??p.remise??p.reduction
+
+),
+
+stock:num(p.stock??p.quantite??p.quantity),
+
+cost:num(p.cost??p.prixAchat??p.prix_achat),
+
+stockValue:num(p.stockValue??p.valeurStock)
+
+};
+
+}
+
+function load(){
 
 try{
 
- const p=JSON.parse(localStorage.getItem(key)||'[]');
+const saved=JSON.parse(localStorage.getItem(KEY));
 
- if(Array.isArray(p))products=p;
+if(saved&&Array.isArray(saved.products)){
 
-}catch(e){}
+db.products=saved.products.map(normalize);
 
-let scanner=null,scanning=false;
+db.movements=Array.isArray(saved.movements)
 
-const status=t=>$('status').textContent=t;
-
-const money=n=>Number(n).toFixed(3)+' TND';
-
-function validDiscount(d){
-
- return Number.isFinite(d)&&d>=0&&d<=100;
+?saved.movements:[];
 
 }
 
-function getDiscount(p){
+}catch(e){
 
- const d=Number(p.discount??0);
-
- return validDiscount(d)?d:0;
+console.log(e);
 
 }
 
-function updatePreview(){
-
- const raw=$('price').value;
-
- const price=Number(raw);
-
- const d=Number($('discount').value);
-
- if(raw===''||!Number.isFinite(price)||price<0||!validDiscount(d)){
-
-  $('initial').textContent='Prix initial : —';
-
-  $('saving').textContent='Montant remise : —';
-
-  $('net').textContent='Prix après remise : —';
-
-  return;
-
- }
-
- $('initial').textContent='Prix initial : '+money(price);
-
- $('saving').textContent='Montant remise : '+money(price*d/100);
-
- $('net').textContent='Prix après remise : '+money(price*(1-d/100));
-
 }
-
-$('price').oninput=updatePreview;
-
-$('discount').oninput=updatePreview;
 
 function save(){
 
- try{
+localStorage.setItem(KEY,JSON.stringify(db));
 
-  localStorage.setItem(key,JSON.stringify(products));
-
-  return true;
-
- }catch(e){
-
-  alert('Stockage impossible : '+e.message);
-
-  return false;
-
- }
+render();
 
 }
 
-function fill(p){
+function product(code){
 
- $('code').value=p.code;
+return db.products.find(
 
- $('name').value=p.name;
+p=>p.code===String(code).trim()
 
- $('price').value=p.price;
+);
 
- $('discount').value=getDiscount(p);
+}
 
- updatePreview();
+function finalPrice(p){
 
- document.querySelector('#form').scrollIntoView({behavior:'smooth'});
+return p.price*(1-p.discount/100);
+
+}
+
+function tab(id){
+
+document.querySelectorAll(".page").forEach(
+
+e=>e.classList.add("hidden")
+
+);
+
+$(id).classList.remove("hidden");
+
+document.querySelectorAll("nav button").forEach(
+
+b=>b.classList.remove("active")
+
+);
+
+const names=[
+
+"stock","achat","vente",
+
+"produits","historique","sauvegarde"
+
+];
+
+const index=names.indexOf(id);
+
+if(index>=0){
+
+document.querySelectorAll("nav button")[index]
+
+.classList.add("active");
+
+}
+
+stopScan();
+
+render();
 
 }
 
 function render(){
 
- const q=$('search').value.trim().toLowerCase();
+renderStock();
 
- $('count').textContent=products.length;
+renderProducts();
 
- const ul=$('products');
-
- ul.replaceChildren();
-
- products.filter(p=>
-
-  p.code.toLowerCase().includes(q)||
-
-  p.name.toLowerCase().includes(q)
-
- ).forEach(p=>{
-
-  const price=Number(p.price);
-
-  const discount=getDiscount(p);
-
-  const net=price*(1-discount/100);
-
-  const li=document.createElement('li');
-
-  const h=document.createElement('div');
-
-  h.className='itemhead';
-
-  h.textContent=p.name;
-
-  const d=document.createElement('div');
-
-  d.textContent='Code : '+p.code+
-
-   ' | Prix initial : '+money(price)+
-
-   ' | Remise : '+discount+' %';
-
-  const n=document.createElement('div');
-
-  n.className='net';
-
-  n.textContent='Prix après remise : '+money(net);
-
-  const a=document.createElement('div');
-
-  a.className='actions';
-
-  const edit=document.createElement('button');
-
-  edit.className='secondary';
-
-  edit.textContent='Modifier';
-
-  edit.onclick=()=>fill(p);
-
-  const del=document.createElement('button');
-
-  del.className='danger';
-
-  del.textContent='Supprimer';
-
-  del.onclick=()=>{
-
-   if(confirm('Supprimer ce produit ?')){
-
-    const old=products;
-
-    products=products.filter(x=>x.code!==p.code);
-
-    if(!save())products=old;
-
-    render();
-
-   }
-
-  };
-
-  a.append(edit,del);
-
-  li.append(h,d,n,a);
-
-  ul.append(li);
-
- });
+renderHistory();
 
 }
 
-function detected(text){
+function renderStock(){
 
- const code=String(text||'').trim();
+$("sProducts").textContent=db.products.length;
 
- if(!code)return;
+$("sPieces").textContent=db.products.reduce(
 
- $('code').value=code;
+(s,p)=>s+p.stock,0
 
- const p=products.find(x=>x.code===code);
+);
 
- $('name').value=p?.name||'';
+$("sValue").textContent=money(
 
- $('price').value=p?.price??'';
+db.products.reduce((s,p)=>s+p.stockValue,0)
 
- $('discount').value=p?getDiscount(p):0;
+);
 
- updatePreview();
+$("sProfit").textContent=money(
 
- status(p?'Produit trouvé : '+p.name:'Nouveau code : '+code);
+db.movements
 
- stopScan();
+.filter(m=>m.type==="Vente")
 
- $('name').focus();
+.reduce((s,m)=>s+num(m.profit),0)
+
+);
+
+const q=$("search").value.toLowerCase();
+
+const list=db.products.filter(p=>
+
+p.name.toLowerCase().includes(q)||
+
+p.code.toLowerCase().includes(q)
+
+);
+
+$("stockList").innerHTML=list.length?
+
+list.map(p=>`
+
+<div class="product">
+
+<strong>${safe(p.name)}</strong>
+
+<div class="small">Code : ${safe(p.code)}</div>
+
+<div>Stock : <b>${p.stock} pièces</b></div>
+
+<div>Prix : ${money(p.price)}</div>
+
+<div>Remise : ${p.discount}%</div>
+
+<div class="price">
+
+Prix final : ${money(finalPrice(p))}
+
+</div>
+
+<div class="small">
+
+Coût moyen :
+
+${money(p.stock?p.stockValue/p.stock:0)}
+
+</div>
+
+</div>
+
+`).join(""):
+
+"<p>Aucun produit.</p>";
 
 }
 
-async function startScan(){
+function renderProducts(){
 
- if(scanning)return;
+$("productList").innerHTML=db.products.length?
 
- if(typeof Html5Qrcode==='undefined'){
+db.products.map(p=>`
 
-  status('Bibliothèque indisponible. Vérifiez Internet.');
+<div class="product">
 
-  return;
+<strong>${safe(p.name)}</strong>
 
- }
+<div class="small">${safe(p.code)}</div>
 
- try{
+<div>Prix : ${money(p.price)}</div>
 
-  scanner=new Html5Qrcode('reader');
+<div>Remise : ${p.discount}%</div>
 
-  scanning=true;
+<div>Stock : ${p.stock}</div>
 
-  $('start').disabled=true;
+<div class="row" style="margin-top:9px">
 
-  $('stop').disabled=false;
+<button class="btn"
 
-  await scanner.start(
+onclick='editProduct(${JSON.stringify(p.code)})'>
 
-   {facingMode:'environment'},
+Modifier
 
-   {fps:10,qrbox:{width:260,height:150}},
+</button>
 
-   decoded=>{if(scanning)detected(decoded)},
+<button class="red"
 
-   ()=>{}
+onclick='deleteProduct(${JSON.stringify(p.code)})'>
 
-  );
+Supprimer
 
-  if(scanning)status('Scanner actif');
+</button>
 
- }catch(e){
+</div>
 
-  scanning=false;
+</div>
 
-  $('start').disabled=false;
+`).join(""):
 
-  $('stop').disabled=true;
+"<p>Aucun produit.</p>";
 
-  status('Caméra inaccessible : vérifiez les autorisations Safari et HTTPS.');
+}
 
-  try{await scanner?.clear()}catch(_){}
+function renderHistory(){
 
-  scanner=null;
+$("historyList").innerHTML=db.movements.length?
 
- }
+[...db.movements].reverse().map(m=>`
+
+<div class="history">
+
+<strong>
+
+${m.type==="Achat"?"🛒 Achat":"💰 Vente"}
+
+: ${safe(m.name)}
+
+</strong>
+
+<div class="small">
+
+${safe(m.date)} | ${safe(m.code)}
+
+</div>
+
+<div>Quantité : ${m.qty}</div>
+
+<div>Prix unitaire : ${money(m.price)}</div>
+
+${m.type==="Vente"?
+
+`<div class="price">
+
+Bénéfice : ${money(m.profit)}
+
+</div>`:
+
+`<div>Total achat :
+
+${money(m.qty*m.price)}
+
+</div>`}
+
+</div>
+
+`).join(""):
+
+"<p>Aucune opération.</p>";
+
+}
+
+function resetForm(){
+
+["oldCode","pCode","pName","pPrice"]
+
+.forEach(id=>$(id).value="");
+
+$("pDiscount").value="0";
+
+}
+
+function saveProduct(){
+
+const code=$("pCode").value.trim();
+
+const name=$("pName").value.trim();
+
+const price=Number($("pPrice").value);
+
+const discount=Number($("pDiscount").value);
+
+const old=$("oldCode").value;
+
+if(!code||!name||
+
+$("pPrice").value===""||
+
+!Number.isFinite(price)||price<0||
+
+!Number.isFinite(discount)||
+
+discount<0||discount>100){
+
+alert("Vérifiez les informations du produit.");
+
+return;
+
+}
+
+if(product(code)&&code!==old){
+
+alert("Code-barres déjà utilisé.");
+
+return;
+
+}
+
+if(old&&product(old)){
+
+Object.assign(product(old),{
+
+code,name,price,discount
+
+});
+
+}else{
+
+db.products.push({
+
+code,name,price,discount,
+
+stock:0,cost:0,stockValue:0
+
+});
+
+}
+
+resetForm();
+
+save();
+
+alert("Produit enregistré.");
+
+}
+
+function editProduct(code){
+
+const p=product(code);
+
+if(!p)return;
+
+$("oldCode").value=p.code;
+
+$("pCode").value=p.code;
+
+$("pName").value=p.name;
+
+$("pPrice").value=p.price;
+
+$("pDiscount").value=p.discount;
+
+tab("produits");
+
+window.scrollTo(0,0);
+
+}
+
+function deleteProduct(code){
+
+const p=product(code);
+
+if(!p)return;
+
+if(p.stock>0){
+
+alert("Impossible : ce produit a du stock.");
+
+return;
+
+}
+
+if(!confirm("Supprimer ce produit ?"))return;
+
+db.products=db.products.filter(p=>p.code!==code);
+
+save();
+
+}
+
+function lookup(type){
+
+const p=product($(type+"Code").value);
+
+$(type+"Found").textContent=p?
+
+p.name+" | Stock : "+p.stock:
+
+"Produit non trouvé";
+
+if(type==="a"&&p){
+
+$("aPrice").value=p.cost||"";
+
+}
+
+if(type==="v"){
+
+$("saleInfo").textContent=p?
+
+"Prix final : "+money(finalPrice(p))+
+
+" | Stock disponible : "+p.stock:
+
+"Scannez un produit existant.";
+
+}
+
+}
+
+function validQty(id){
+
+const q=Number($(id).value);
+
+return Number.isSafeInteger(q)&&q>0?q:null;
+
+}
+
+function purchase(){
+
+const p=product($("aCode").value);
+
+const qty=validQty("aQty");
+
+const price=Number($("aPrice").value);
+
+if(!p){
+
+alert("Produit introuvable. Créez sa fiche.");
+
+return;
+
+}
+
+if(!qty){
+
+alert("Quantité invalide.");
+
+return;
+
+}
+
+if($("aPrice").value===""||
+
+!Number.isFinite(price)||price<0){
+
+alert("Prix d'achat invalide.");
+
+return;
+
+}
+
+p.stock+=qty;
+
+p.stockValue+=qty*price;
+
+p.cost=p.stockValue/p.stock;
+
+db.movements.push({
+
+type:"Achat",
+
+date:new Date().toLocaleString("fr-FR"),
+
+code:p.code,
+
+name:p.name,
+
+qty:qty,
+
+price:price,
+
+profit:0
+
+});
+
+save();
+
+$("aCode").value="";
+
+$("aQty").value="1";
+
+$("aPrice").value="";
+
+$("aFound").textContent="";
+
+alert("Achat enregistré. Stock augmenté.");
+
+}
+
+function sale(){
+
+const p=product($("vCode").value);
+
+const qty=validQty("vQty");
+
+if(!p){
+
+alert("Produit introuvable.");
+
+return;
+
+}
+
+if(!qty){
+
+alert("Quantité invalide.");
+
+return;
+
+}
+
+if(qty>p.stock){
+
+alert("Stock insuffisant ! Disponible : "+p.stock);
+
+return;
+
+}
+
+const price=finalPrice(p);
+
+const avgCost=p.stock?p.stockValue/p.stock:0;
+
+const profit=(price-avgCost)*qty;
+
+p.stock-=qty;
+
+p.stockValue=Math.max(
+
+0,p.stockValue-avgCost*qty
+
+);
+
+if(p.stock===0)p.stockValue=0;
+
+p.cost=avgCost;
+
+db.movements.push({
+
+type:"Vente",
+
+date:new Date().toLocaleString("fr-FR"),
+
+code:p.code,
+
+name:p.name,
+
+qty:qty,
+
+price:price,
+
+profit:profit
+
+});
+
+save();
+
+$("vCode").value="";
+
+$("vQty").value="1";
+
+$("vFound").textContent="";
+
+$("saleInfo").textContent=
+
+"Scannez un produit pour afficher le prix.";
+
+alert(
+
+"Vente enregistrée !\n"+
+
+"Total : "+money(price*qty)+"\n"+
+
+"Bénéfice : "+money(profit)
+
+);
+
+}
+
+async function scan(type){
+
+if(typeof Html5Qrcode==="undefined"){
+
+alert("Scanner indisponible. Vérifiez Internet.");
+
+return;
+
+}
+
+await stopScan();
+
+scanTarget=type;
+
+$("scanPanel").classList.remove("hidden");
+
+$("scanPanel").scrollIntoView({
+
+behavior:"smooth",block:"start"
+
+});
+
+try{
+
+scanner=new Html5Qrcode("reader");
+
+await scanner.start(
+
+{facingMode:"environment"},
+
+{
+
+fps:10,
+
+qrbox:{width:250,height:150},
+
+aspectRatio:1.5
+
+},
+
+async decoded=>{
+
+const target=scanTarget;
+
+if(!target)return;
+
+$(target+"Code").value=decoded;
+
+await stopScan();
+
+if(target==="a"||target==="v"){
+
+lookup(target);
+
+}
+
+if(target==="p"){
+
+const p=product(decoded);
+
+if(p)editProduct(decoded);
+
+}
+
+},
+
+()=>{}
+
+);
+
+}catch(e){
+
+alert(
+
+"Impossible d'ouvrir la caméra. "+
+
+"Autorisez l'accès dans Safari."
+
+);
+
+await stopScan();
+
+}
 
 }
 
 async function stopScan(){
 
- if(!scanning)return;
+scanTarget=null;
 
- scanning=false;
+if(scanner){
 
- $('stop').disabled=true;
+const s=scanner;
 
- try{
+scanner=null;
 
-  await scanner?.stop();
+try{
 
-  await scanner?.clear();
+if(s.isScanning)await s.stop();
 
- }catch(e){}
+}catch(e){}
 
- scanner=null;
+try{
 
- $('start').disabled=false;
+s.clear();
+
+}catch(e){}
 
 }
 
-$('start').onclick=startScan;
+$("scanPanel").classList.add("hidden");
 
-$('stop').onclick=stopScan;
+}
 
-$('form').onsubmit=e=>{
+function exportJSON(){
 
- e.preventDefault();
+const data={
 
- const code=$('code').value.trim();
+app:"Mon Scanner Pro",
 
- const name=$('name').value.trim();
+version:1,
 
- const price=Number($('price').value);
+exportedAt:new Date().toISOString(),
 
- const discount=Number($('discount').value);
+products:db.products,
 
- if(!code||!name||$('price').value===''||
-
-    !Number.isFinite(price)||price<0||
-
-    $('discount').value===''||!validDiscount(discount)){
-
-  alert('Vérifiez le prix et la remise (0 à 100 %).');
-
-  return;
-
- }
-
- const p={code,name,price,discount};
-
- const i=products.findIndex(x=>x.code===code);
-
- const old=products.slice();
-
- if(i>=0)products[i]=p;
-
- else products.push(p);
-
- if(save()){
-
-  render();
-
-  status('Produit enregistré');
-
-  $('form').reset();
-
-  $('discount').value=0;
-
-  updatePreview();
-
- }else{
-
-  products=old;
-
- }
+movements:db.movements
 
 };
 
-$('search').oninput=render;
+const blob=new Blob(
 
-$('export').onclick=()=>{
+[JSON.stringify(data,null,2)],
 
- const blob=new Blob(
+{type:"application/json"}
 
-  [JSON.stringify(products,null,2)],
+);
 
-  {type:'application/json'}
+const url=URL.createObjectURL(blob);
 
- );
+const a=document.createElement("a");
 
- const url=URL.createObjectURL(blob);
+a.href=url;
 
- const a=document.createElement('a');
+a.download="mon-scanner-sauvegarde.json";
 
- a.href=url;
+document.body.appendChild(a);
 
- a.download='mon-scanner-sauvegarde.json';
+a.click();
 
- a.click();
+a.remove();
 
- setTimeout(()=>URL.revokeObjectURL(url),1000);
+setTimeout(()=>URL.revokeObjectURL(url),1000);
 
-};
+}
 
-$('importBtn').onclick=()=>$('importFile').click();
+function extractProducts(data){
 
-$('importFile').onchange=async e=>{
+if(Array.isArray(data))return data;
 
- const file=e.target.files[0];
+if(data&&typeof data==="object"){
 
- if(!file)return;
+const keys=[
 
- try{
+"products","produits","items",
 
-  const data=JSON.parse(await file.text());
+"articles","listeProduits"
 
-  if(!Array.isArray(data)||!data.every(p=>
+];
 
-   typeof p.code==='string'&&
+for(const key of keys){
 
-   typeof p.name==='string'&&
+if(Array.isArray(data[key]))return data[key];
 
-   typeof p.price==='number'&&
+}
 
-   Number.isFinite(p.price)&&p.price>=0&&
+}
 
-   (p.discount===undefined||
+return null;
 
-    (typeof p.discount==='number'&&validDiscount(p.discount)))
+}
 
-  ))throw Error('Format incorrect');
+async function importJSON(event){
 
-  if(confirm('Remplacer les produits actuels par la sauvegarde ?')){
+const file=event.target.files[0];
 
-   const old=products;
+if(!file)return;
 
-   products=data;
+try{
 
-   if(!save())products=old;
+const text=await file.text();
 
-   render();
+const data=JSON.parse(text);
 
-  }
+const items=extractProducts(data);
 
- }catch(err){
+if(!items){
 
-  alert('Import impossible : '+err.message);
+throw new Error("Format JSON non reconnu.");
 
- }
+}
 
- e.target.value='';
+const incoming=items.map(normalize);
 
-};
+const codes=new Set();
+
+for(const p of incoming){
+
+if(!p.code){
+
+throw new Error(
+
+"Un produit n'a pas de code-barres."
+
+);
+
+}
+
+if(codes.has(p.code)){
+
+throw new Error(
+
+"Code-barres en double : "+p.code
+
+);
+
+}
+
+if(
+
+p.stock<0||
+
+p.price<0||
+
+p.discount<0||
+
+p.discount>100
+
+){
+
+throw new Error(
+
+"Valeurs invalides : "+p.name
+
+);
+
+}
+
+codes.add(p.code);
+
+}
+
+if(!confirm(
+
+"Importer "+incoming.length+
+
+" produits ? Les données actuelles "+
+
+"seront remplacées. "+
+
+"Faites une sauvegarde avant."
+
+))return;
+
+db.products=incoming;
+
+db.movements=
+
+Array.isArray(data.movements)?
+
+data.movements:[];
+
+save();
+
+alert(
+
+"Importation réussie : "+
+
+incoming.length+" produits."
+
+);
+
+}catch(e){
+
+alert(
+
+"Importation impossible : "+e.message+
+
+"\nConservez votre ancien fichier JSON."
+
+);
+
+}finally{
+
+event.target.value="";
+
+}
+
+}
+
+load();
 
 render();
-
-updatePreview();
 
 </script>
 
