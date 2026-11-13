@@ -1,6 +1,605 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f172a"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Mon Scanner"><title>Mon Scanner</title><link rel="manifest" href="manifest.webmanifest"><style>body{margin:0;background:#f1f5f9;color:#0f172a;font:16px -apple-system,BlinkMacSystemFont,sans-serif}header{background:#0f172a;color:white;padding:22px 18px}h1{margin:0;font-size:25px}main{max-width:650px;margin:auto;padding:16px}.card{background:white;border-radius:18px;padding:18px;margin-bottom:15px;box-shadow:0 2px 12px #0001}label{display:block;font-weight:650;margin:12px 0 6px}input{box-sizing:border-box;width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px}button{background:#2563eb;color:white;border:0;border-radius:11px;padding:13px 16px;font-weight:700;font-size:16px;margin-top:10px}button.secondary{background:#334155}button.danger{background:#b91c1c}button:disabled{opacity:.5}#reader{width:100%;overflow:hidden;border-radius:12px}#reader video{width:100%!important}small,.hint{color:#64748b}li{list-style:none;padding:12px 0;border-bottom:1px solid #e2e8f0}ul{padding:0} .itemhead{font-weight:700}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{font-size:13px;padding:9px}.status{min-height:20px;color:#166534}</style></head><body><header><h1>▥ Mon Scanner</h1><div>Produits • Prix • Codes-barres</div></header><main><section class="card"><h2>Scanner un code-barres</h2><p class="hint">Autorisez la caméra, puis visez le code-barres.</p><div id="reader"></div><div class="actions"><button id="start">Démarrer le scanner</button><button id="stop" class="secondary" disabled>Arrêter</button></div><p id="status" class="status" aria-live="polite"></p></section><section class="card"><h2>Fiche produit</h2><form id="form"><label for="code">Code-barres</label><input id="code" required inputmode="numeric" placeholder="Scanner ou saisir le code"><label for="name">Nom du produit</label><input id="name" required placeholder="Ex. Lait 1 L"><label for="price">Prix (TND)</label><input id="price" required type="number" inputmode="decimal" min="0" step="0.001" placeholder="Ex. 2.500"><button type="submit">Enregistrer le produit</button></form></section><section class="card"><h2>Mes produits (<span id="count">0</span>)</h2><input id="search" placeholder="Rechercher un nom ou un code" aria-label="Rechercher"><ul id="products"></ul><div class="actions"><button id="export" class="secondary">Exporter JSON</button><button id="importBtn" class="secondary">Importer JSON</button><input type="file" id="importFile" accept="application/json,.json" hidden></div><p><small>Les données restent sur cet iPhone (dans ce navigateur). Exportez une sauvegarde régulièrement. Effacer les données Safari peut supprimer les produits.</small></p></section></main><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><script>
-const $=id=>document.getElementById(id), key='mon-scanner-products-v1';let products=[];try{const p=JSON.parse(localStorage.getItem(key)||'[]');if(Array.isArray(p))products=p}catch(e){}let scanner=null,scanning=false;const status=t=>$('status').textContent=t;function save(){try{localStorage.setItem(key,JSON.stringify(products));return true}catch(e){alert('Stockage impossible : '+e.message);return false}}function fill(p){$('code').value=p.code;$('name').value=p.name;$('price').value=p.price;window.scrollTo({top:0,behavior:'smooth'})}function render(){const q=$('search').value.trim().toLowerCase();$('count').textContent=products.length;const ul=$('products');ul.replaceChildren();products.filter(p=>p.code.toLowerCase().includes(q)||p.name.toLowerCase().includes(q)).forEach(p=>{const li=document.createElement('li');const h=document.createElement('div');h.className='itemhead';h.textContent=p.name;const d=document.createElement('div');d.textContent=p.code+' • '+Number(p.price).toFixed(3)+' TND';const a=document.createElement('div');a.className='actions';const edit=document.createElement('button');edit.className='secondary';edit.textContent='Modifier';edit.onclick=()=>fill(p);const del=document.createElement('button');del.className='danger';del.textContent='Supprimer';del.onclick=()=>{if(confirm('Supprimer ce produit ?')){products=products.filter(x=>x.code!==p.code);save();render()}};a.append(edit,del);li.append(h,d,a);ul.append(li)})}function detected(text){const code=String(text||'').trim();if(!code)return;$('code').value=code;const p=products.find(x=>x.code===code);$('name').value=p?.name||'';$('price').value=p?.price??'';status(p?'Produit trouvé : '+p.name:'Nouveau code : '+code);stopScan();$('name').focus()}
-async function startScan(){if(scanning)return;if(typeof Html5Qrcode==='undefined'){status('Bibliothèque indisponible. Vérifiez Internet.');return}try{scanner=new Html5Qrcode('reader');scanning=true;$('start').disabled=true;$('stop').disabled=false;await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:150}},decoded=>{if(scanning)detected(decoded)},()=>{});status('Scanner actif')}catch(e){scanning=false;$('start').disabled=false;$('stop').disabled=true;status('Caméra inaccessible : vérifiez les autorisations Safari et HTTPS.');try{await scanner?.clear()}catch(_){ }scanner=null}}
-async function stopScan(){if(!scanning)return;scanning=false;$('stop').disabled=true;try{await scanner?.stop();await scanner?.clear()}catch(e){}scanner=null;$('start').disabled=false}
-$('start').onclick=startScan;$('stop').onclick=stopScan;$('form').onsubmit=e=>{e.preventDefault();const code=$('code').value.trim(),name=$('name').value.trim(),price=Number($('price').value);if(!code||!name||!Number.isFinite(price)||price<0){alert('Vérifiez les champs.');return}const p={code,name,price};const i=products.findIndex(x=>x.code===code);if(i>=0)products[i]=p;else products.push(p);if(save()){render();status('Produit enregistré');$('form').reset()}};$('search').oninput=render;$('export').onclick=()=>{const blob=new Blob([JSON.stringify(products,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mon-scanner-sauvegarde.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!Array.isArray(data)||!data.every(p=>typeof p.code==='string'&&typeof p.name==='string'&&typeof p.price==='number'&&Number.isFinite(p.price)&&p.price>=0))throw Error('Format incorrect');if(confirm('Remplacer les produits actuels par la sauvegarde ?')){products=data;save();render()}}catch(err){alert('Import impossible : '+err.message)}e.target.value=''};render();
-</script></body></html>
+
+
+<!doctype html>
+
+<html lang="fr">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<meta name="theme-color" content="#0f172a">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+<meta name="apple-mobile-web-app-title" content="Mon Scanner">
+
+<title>Mon Scanner</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+
+<style>
+
+body{margin:0;background:#f1f5f9;color:#0f172a;font:16px -apple-system,BlinkMacSystemFont,sans-serif}
+
+header{background:#0f172a;color:white;padding:22px 18px}
+
+h1{margin:0;font-size:25px}
+
+main{max-width:650px;margin:auto;padding:16px}
+
+.card{background:white;border-radius:18px;padding:18px;margin-bottom:15px;box-shadow:0 2px 12px #0001}
+
+label{display:block;font-weight:650;margin:12px 0 6px}
+
+input{box-sizing:border-box;width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:10px;font-size:17px}
+
+button{background:#2563eb;color:white;border:0;border-radius:11px;padding:13px 16px;font-weight:700;font-size:16px;margin-top:10px}
+
+button.secondary{background:#334155}
+
+button.danger{background:#b91c1c}
+
+button:disabled{opacity:.5}
+
+#reader{width:100%;overflow:hidden;border-radius:12px}
+
+#reader video{width:100%!important}
+
+small,.hint{color:#64748b}
+
+li{list-style:none;padding:12px 0;border-bottom:1px solid #e2e8f0}
+
+ul{padding:0}
+
+.itemhead{font-weight:700}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.actions button{font-size:13px;padding:9px}
+
+.status{min-height:20px;color:#166534}
+
+.discountbox{background:#eff6ff;padding:14px;border-radius:12px;margin-top:15px}
+
+.net{color:#166534;font-size:20px;font-weight:700}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>▥ Mon Scanner</h1>
+
+<div>Produits • Prix • Codes-barres • Remise</div>
+
+</header>
+
+<main>
+
+<section class="card">
+
+<h2>Scanner un code-barres</h2>
+
+<p class="hint">Autorisez la caméra, puis visez le code-barres.</p>
+
+<div id="reader"></div>
+
+<div class="actions">
+
+<button id="start">Démarrer le scanner</button>
+
+<button id="stop" class="secondary" disabled>Arrêter</button>
+
+</div>
+
+<p id="status" class="status" aria-live="polite"></p>
+
+</section>
+
+<section class="card">
+
+<h2>Fiche produit</h2>
+
+<form id="form">
+
+<label for="code">Code-barres</label>
+
+<input id="code" required inputmode="numeric" placeholder="Scanner ou saisir le code">
+
+<label for="name">Nom du produit</label>
+
+<input id="name" required placeholder="Ex. Lait 1 L">
+
+<label for="price">Prix initial (TND)</label>
+
+<input id="price" required type="number" inputmode="decimal" min="0" step="0.001" placeholder="Ex. 10.000">
+
+<div class="discountbox">
+
+<label for="discount">Remise (%)</label>
+
+<input id="discount" type="number" inputmode="decimal" min="0" max="100" step="0.01" value="0">
+
+<p id="initial">Prix initial : —</p>
+
+<p id="saving">Montant remise : —</p>
+
+<p id="net" class="net">Prix après remise : —</p>
+
+</div>
+
+<button type="submit">Enregistrer le produit</button>
+
+</form>
+
+</section>
+
+<section class="card">
+
+<h2>Mes produits (<span id="count">0</span>)</h2>
+
+<input id="search" placeholder="Rechercher un nom ou un code" aria-label="Rechercher">
+
+<ul id="products"></ul>
+
+<div class="actions">
+
+<button id="export" class="secondary">Exporter JSON</button>
+
+<button id="importBtn" class="secondary">Importer JSON</button>
+
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+
+</div>
+
+<p><small>Les données restent dans ce navigateur. Exportez une sauvegarde régulièrement.</small></p>
+
+</section>
+
+</main>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+
+const $=id=>document.getElementById(id);
+
+const key='mon-scanner-products-v1';
+
+let products=[];
+
+try{
+
+ const p=JSON.parse(localStorage.getItem(key)||'[]');
+
+ if(Array.isArray(p))products=p;
+
+}catch(e){}
+
+let scanner=null,scanning=false;
+
+const status=t=>$('status').textContent=t;
+
+const money=n=>Number(n).toFixed(3)+' TND';
+
+function validDiscount(d){
+
+ return Number.isFinite(d)&&d>=0&&d<=100;
+
+}
+
+function getDiscount(p){
+
+ const d=Number(p.discount??0);
+
+ return validDiscount(d)?d:0;
+
+}
+
+function updatePreview(){
+
+ const raw=$('price').value;
+
+ const price=Number(raw);
+
+ const d=Number($('discount').value);
+
+ if(raw===''||!Number.isFinite(price)||price<0||!validDiscount(d)){
+
+  $('initial').textContent='Prix initial : —';
+
+  $('saving').textContent='Montant remise : —';
+
+  $('net').textContent='Prix après remise : —';
+
+  return;
+
+ }
+
+ $('initial').textContent='Prix initial : '+money(price);
+
+ $('saving').textContent='Montant remise : '+money(price*d/100);
+
+ $('net').textContent='Prix après remise : '+money(price*(1-d/100));
+
+}
+
+$('price').oninput=updatePreview;
+
+$('discount').oninput=updatePreview;
+
+function save(){
+
+ try{
+
+  localStorage.setItem(key,JSON.stringify(products));
+
+  return true;
+
+ }catch(e){
+
+  alert('Stockage impossible : '+e.message);
+
+  return false;
+
+ }
+
+}
+
+function fill(p){
+
+ $('code').value=p.code;
+
+ $('name').value=p.name;
+
+ $('price').value=p.price;
+
+ $('discount').value=getDiscount(p);
+
+ updatePreview();
+
+ document.querySelector('#form').scrollIntoView({behavior:'smooth'});
+
+}
+
+function render(){
+
+ const q=$('search').value.trim().toLowerCase();
+
+ $('count').textContent=products.length;
+
+ const ul=$('products');
+
+ ul.replaceChildren();
+
+ products.filter(p=>
+
+  p.code.toLowerCase().includes(q)||
+
+  p.name.toLowerCase().includes(q)
+
+ ).forEach(p=>{
+
+  const price=Number(p.price);
+
+  const discount=getDiscount(p);
+
+  const net=price*(1-discount/100);
+
+  const li=document.createElement('li');
+
+  const h=document.createElement('div');
+
+  h.className='itemhead';
+
+  h.textContent=p.name;
+
+  const d=document.createElement('div');
+
+  d.textContent='Code : '+p.code+
+
+   ' | Prix initial : '+money(price)+
+
+   ' | Remise : '+discount+' %';
+
+  const n=document.createElement('div');
+
+  n.className='net';
+
+  n.textContent='Prix après remise : '+money(net);
+
+  const a=document.createElement('div');
+
+  a.className='actions';
+
+  const edit=document.createElement('button');
+
+  edit.className='secondary';
+
+  edit.textContent='Modifier';
+
+  edit.onclick=()=>fill(p);
+
+  const del=document.createElement('button');
+
+  del.className='danger';
+
+  del.textContent='Supprimer';
+
+  del.onclick=()=>{
+
+   if(confirm('Supprimer ce produit ?')){
+
+    const old=products;
+
+    products=products.filter(x=>x.code!==p.code);
+
+    if(!save())products=old;
+
+    render();
+
+   }
+
+  };
+
+  a.append(edit,del);
+
+  li.append(h,d,n,a);
+
+  ul.append(li);
+
+ });
+
+}
+
+function detected(text){
+
+ const code=String(text||'').trim();
+
+ if(!code)return;
+
+ $('code').value=code;
+
+ const p=products.find(x=>x.code===code);
+
+ $('name').value=p?.name||'';
+
+ $('price').value=p?.price??'';
+
+ $('discount').value=p?getDiscount(p):0;
+
+ updatePreview();
+
+ status(p?'Produit trouvé : '+p.name:'Nouveau code : '+code);
+
+ stopScan();
+
+ $('name').focus();
+
+}
+
+async function startScan(){
+
+ if(scanning)return;
+
+ if(typeof Html5Qrcode==='undefined'){
+
+  status('Bibliothèque indisponible. Vérifiez Internet.');
+
+  return;
+
+ }
+
+ try{
+
+  scanner=new Html5Qrcode('reader');
+
+  scanning=true;
+
+  $('start').disabled=true;
+
+  $('stop').disabled=false;
+
+  await scanner.start(
+
+   {facingMode:'environment'},
+
+   {fps:10,qrbox:{width:260,height:150}},
+
+   decoded=>{if(scanning)detected(decoded)},
+
+   ()=>{}
+
+  );
+
+  if(scanning)status('Scanner actif');
+
+ }catch(e){
+
+  scanning=false;
+
+  $('start').disabled=false;
+
+  $('stop').disabled=true;
+
+  status('Caméra inaccessible : vérifiez les autorisations Safari et HTTPS.');
+
+  try{await scanner?.clear()}catch(_){}
+
+  scanner=null;
+
+ }
+
+}
+
+async function stopScan(){
+
+ if(!scanning)return;
+
+ scanning=false;
+
+ $('stop').disabled=true;
+
+ try{
+
+  await scanner?.stop();
+
+  await scanner?.clear();
+
+ }catch(e){}
+
+ scanner=null;
+
+ $('start').disabled=false;
+
+}
+
+$('start').onclick=startScan;
+
+$('stop').onclick=stopScan;
+
+$('form').onsubmit=e=>{
+
+ e.preventDefault();
+
+ const code=$('code').value.trim();
+
+ const name=$('name').value.trim();
+
+ const price=Number($('price').value);
+
+ const discount=Number($('discount').value);
+
+ if(!code||!name||$('price').value===''||
+
+    !Number.isFinite(price)||price<0||
+
+    $('discount').value===''||!validDiscount(discount)){
+
+  alert('Vérifiez le prix et la remise (0 à 100 %).');
+
+  return;
+
+ }
+
+ const p={code,name,price,discount};
+
+ const i=products.findIndex(x=>x.code===code);
+
+ const old=products.slice();
+
+ if(i>=0)products[i]=p;
+
+ else products.push(p);
+
+ if(save()){
+
+  render();
+
+  status('Produit enregistré');
+
+  $('form').reset();
+
+  $('discount').value=0;
+
+  updatePreview();
+
+ }else{
+
+  products=old;
+
+ }
+
+};
+
+$('search').oninput=render;
+
+$('export').onclick=()=>{
+
+ const blob=new Blob(
+
+  [JSON.stringify(products,null,2)],
+
+  {type:'application/json'}
+
+ );
+
+ const url=URL.createObjectURL(blob);
+
+ const a=document.createElement('a');
+
+ a.href=url;
+
+ a.download='mon-scanner-sauvegarde.json';
+
+ a.click();
+
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+};
+
+$('importBtn').onclick=()=>$('importFile').click();
+
+$('importFile').onchange=async e=>{
+
+ const file=e.target.files[0];
+
+ if(!file)return;
+
+ try{
+
+  const data=JSON.parse(await file.text());
+
+  if(!Array.isArray(data)||!data.every(p=>
+
+   typeof p.code==='string'&&
+
+   typeof p.name==='string'&&
+
+   typeof p.price==='number'&&
+
+   Number.isFinite(p.price)&&p.price>=0&&
+
+   (p.discount===undefined||
+
+    (typeof p.discount==='number'&&validDiscount(p.discount)))
+
+  ))throw Error('Format incorrect');
+
+  if(confirm('Remplacer les produits actuels par la sauvegarde ?')){
+
+   const old=products;
+
+   products=data;
+
+   if(!save())products=old;
+
+   render();
+
+  }
+
+ }catch(err){
+
+  alert('Import impossible : '+err.message);
+
+ }
+
+ e.target.value='';
+
+};
+
+render();
+
+updatePreview();
+
+</script>
+
+</body>
+
+</html>
