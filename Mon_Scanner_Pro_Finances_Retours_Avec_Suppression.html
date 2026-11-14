@@ -146,4 +146,55 @@ renderProducts=function(){
   });
 
 };
+function printBarcode(id){
+
+  if(!admin)return;
+
+  const p=products.find(x=>Number(x.id)===Number(id));
+
+  if(!p)return;
+
+  const url='https://bwipjs-api.metafloor.com/?bcid=code128&text='+encodeURIComponent(p.barcode)+'&includetext&scale=3';
+
+  const w=window.open('','_blank');
+
+  if(!w)return alert('Autorisez les fenêtres pop-up');
+
+  w.document.body.innerHTML=
+
+    '<h3>'+safe(p.name)+'</h3>'+
+
+    '<img style="max-width:100%" src="'+url+'">'+
+
+    '<p><button onclick="window.print()">🖨️ Imprimer</button></p>';
+
+}
+
+const renderAvantBarcode=renderProducts;
+
+renderProducts=function(){
+
+  renderAvantBarcode();
+
+  if(!admin)return;
+
+  document.querySelectorAll('#productList .product').forEach((el,i)=>{
+
+    const p=products[i];
+
+    if(!p)return;
+
+    const b=document.createElement('button');
+
+    b.className='blue';
+
+    b.textContent='🏷️ Générer & Imprimer code-barres';
+
+    b.onclick=()=>printBarcode(p.id);
+
+    el.appendChild(b);
+
+  });
+
+}; 
 </script></body></html>
