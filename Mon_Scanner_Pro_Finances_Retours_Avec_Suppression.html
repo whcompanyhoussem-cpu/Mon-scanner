@@ -197,4 +197,225 @@ renderProducts=function(){
   });
 
 }; 
+ 
+
+const docNav=document.createElement('button');
+
+docNav.className='adminOnly';
+
+docNav.dataset.tab='documents';
+
+docNav.textContent='📄 Documents';
+
+docNav.onclick=()=>tab('documents');
+
+$('nav').appendChild(docNav);
+
+const docPage=document.createElement('section');
+
+docPage.id='documents';
+
+docPage.className='page hidden adminOnly';
+
+docPage.innerHTML=`
+
+<div class="card">
+
+<h2>📄 Documents — STE ABDELLI BUSINESS</h2>
+
+<p class="notice">Brouillon à vérifier avant émission officielle.</p>
+
+<label>Type de document</label>
+
+<select id="docType">
+
+<option value="Facture">Facture</option>
+
+<option value="Bon de livraison">Bon de livraison</option>
+
+<option value="Bon de commande">Bon de commande</option>
+
+<option value="Bon de retour">Bon de retour</option>
+
+</select>
+
+<label>Numéro du document</label>
+
+<input id="docNumber" placeholder="Ex : FAC-001">
+
+<label>Client / Fournisseur</label>
+
+<input id="docClient" placeholder="Nom">
+
+<label>Adresse</label>
+
+<input id="docAddress" placeholder="Adresse">
+
+<label>E-mail</label>
+
+<input id="docEmail" type="email" placeholder="client@email.com">
+
+<label>Produit</label>
+
+<input id="docProduct" placeholder="Nom du produit">
+
+<label>Quantité</label>
+
+<input id="docQty" type="number" min="1" value="1">
+
+<label>Prix unitaire TTC (TND)</label>
+
+<input id="docPrice" type="number" min="0" step=".001">
+
+<button class="blue full" onclick="previewDocument()">📄 Préparer le document</button>
+
+</div>
+
+<div id="docPreview" class="card hidden"></div>`;
+
+$('app').appendChild(docPage);
+
+function docDetails(){
+
+ const type=$('docType').value;
+
+ const number=$('docNumber').value.trim();
+
+ const client=$('docClient').value.trim();
+
+ const item=$('docProduct').value.trim();
+
+ const qty=Number($('docQty').value);
+
+ const price=Number($('docPrice').value);
+
+ if(!number||!client||!item||
+
+    !Number.isSafeInteger(qty)||qty<=0||
+
+    $('docPrice').value===''||
+
+    !Number.isFinite(price)||price<0){
+
+   throw Error('Complétez les informations du document.');
+
+ }
+
+ const ttc=Math.round(qty*price*1000)/1000;
+
+ const hasVat=['Facture','Bon de livraison'].includes(type);
+
+ const ht=hasVat?Math.round(ttc/1.19*1000)/1000:ttc;
+
+ const vat=hasVat?Math.round((ttc-ht)*1000)/1000:0;
+
+ return {type,number,client,item,qty,price,ttc,ht,vat,hasVat};
+
+}
+
+function docHtml(d){
+
+ const date=new Date().toLocaleDateString('fr-TN');
+
+ return `<h2>STE ABDELLI BUSINESS</h2>
+
+ <p>MEDENINE — TUNISIE</p>
+
+ <h2>${safe(d.type)} — BROUILLON</h2>
+
+ <p>N° ${safe(d.number)} — ${date}</p>
+
+ <p><b>Client / Fournisseur :</b> ${safe(d.client)}</p>
+
+ <p>${safe($('docAddress').value)}</p>
+
+ <hr>
+
+ <p><b>Produit :</b> ${safe(d.item)}</p>
+
+ <p>Quantité : ${d.qty}</p>
+
+ <p>Prix unitaire TTC : ${money(d.price)}</p>
+
+ <hr>
+
+ ${d.hasVat?`<p>Total HT : ${money(d.ht)}</p>
+
+ <p>TVA 19% : ${money(d.vat)}</p>`:''}
+
+ <h3>Total TTC : ${money(d.ttc)}</h3>
+
+ <p><small>Document provisoire — informations fiscales à vérifier.</small></p>`;
+
+}
+
+function previewDocument(){
+
+ if(!admin)return;
+
+ try{
+
+   const d=docDetails();
+
+   const el=$('docPreview');
+
+   el.classList.remove('hidden');
+
+   el.innerHTML=docHtml(d)+
+
+   `<button class="blue full" onclick="printDocument()">🖨️ Imprimer / PDF</button>
+
+    <button class="gray full" onclick="emailDocument()">📧 Envoyer par e-mail</button>`;
+
+   el.scrollIntoView({behavior:'smooth'});
+
+ }catch(e){msg(errorText(e),true)}
+
+}
+
+function printDocument(){
+
+ if(!admin)return;
+
+ const w=window.open('','_blank');
+
+ if(!w)return msg('Autorisez les fenêtres pop-up.',true);
+
+ w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Document</title></head><body style="font:16px Arial;padding:24px">'+$('docPreview').innerHTML.split('<button')[0]+'</body></html>');
+
+ w.document.close();
+
+ w.focus();
+
+ w.print();
+
+}
+
+function emailDocument(){
+
+ if(!admin)return;
+
+ try{
+
+   const d=docDetails();
+
+   const email=$('docEmail').value.trim();
+
+   const subject=d.type+' '+d.number;
+
+   const body='Bonjour,\n\n'+subject+
+
+    '\nTotal TTC : '+money(d.ttc)+
+
+    '\n\nVeuillez trouver le document en pièce jointe.';
+
+   window.location.href='mailto:'+encodeURIComponent(email)+
+
+    '?subject='+encodeURIComponent(subject)+
+
+    '&body='+encodeURIComponent(body);
+
+ }catch(e){msg(errorText(e),true)}
+
+}
 </script></body></html>
