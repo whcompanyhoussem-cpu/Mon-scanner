@@ -73,4 +73,77 @@ async function decideReturn(id,approved){if(!admin||busy)return;let refund=0;if(
 async function loadReturns(){try{const r=await sb.rpc('list_return_requests');if(r.error)throw r.error;returnRows=r.data||[];$('returnList').innerHTML=returnRows.map(x=>`<div class="product"><b>${safe(x.product_name||'Produit')} — ${Number(x.quantity)} pièce(s)</b><div class="small">${safe(x.return_type==='refund'?'Remboursement':'Échange')} • ${safe(x.status)} • ${safe(new Date(x.created_at).toLocaleString('fr-FR'))}</div><div>Motif : ${safe(x.reason)}</div>${admin&&x.status==='pending'?`<div class="row" style="margin-top:8px"><button class="green" onclick="decideReturn(${Number(x.id)},true)">Approuver</button><button class="red" onclick="decideReturn(${Number(x.id)},false)">Refuser</button></div>`:''}${admin&&x.status==='approved'?`<div class="small">Remboursement déclaré : ${money(x.refund_amount||0)}</div>`:''}</div>`).join('')||'<p>Aucune demande.</p>'}catch(e){msg('Retours indisponibles : exécutez d’abord le script SQL fourni. '+errorText(e),true)}}
 function exportJSON(){if(!admin)return;const blob=new Blob([JSON.stringify({app:'Mon Scanner Pro',exportedAt:new Date().toISOString(),products,movements,expenses,payroll,returnRows},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mon-scanner-cloud-export.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $('fMonth').value=isoToday().slice(0,7);$('eDate').value=isoToday();$('payDate').value=isoToday();(async()=>{try{await boot()}catch(e){msg(errorText(e),true)}})();
+ async function correctStock(id){
+
+  if(!admin||busy)return;
+
+  const p=products.find(x=>Number(x.id)===Number(id));
+
+  if(!p)return;
+
+  const val=prompt('Quantité correcte pour '+p.name+' (actuel : '+p.stock_quantity+') :',String(p.stock_quantity));
+
+  if(val===null)return;
+
+  const n=Number(val);
+
+  if(!Number.isSafeInteger(n)||n<0)return alert('Quantité invalide');
+
+  const reason=prompt('Motif de la correction :');
+
+  if(reason===null)return;
+
+  if(reason.trim().length<3)return alert('Indiquez un motif');
+
+  if(!confirm('Corriger '+p.name+' : '+p.stock_quantity+' → '+n+' ?'))return;
+
+  busy=true;
+
+  try{
+
+    const r=await sb.rpc('correct_stock',{p_product_id:p.id,p_new_quantity:n,p_reason:reason.trim()});
+
+    if(r.error)throw r.error;
+
+    await refresh();
+
+    msg('Stock corrigé avec succès.');
+
+  }catch(e){
+
+    msg('Correction impossible : '+errorText(e),true);
+
+  }finally{busy=false}
+
+}
+
+const originalRenderProducts=renderProducts;
+
+renderProducts=function(){
+
+  originalRenderProducts();
+
+  if(!admin)return;
+
+  document.querySelectorAll('#productList .product').forEach((el,i)=>{
+
+    const p=products[i];
+
+    if(!p)return;
+
+    const b=document.createElement('button');
+
+    b.className='gray';
+
+    b.textContent='✏️ Corriger le stock';
+
+    b.style.marginLeft='8px';
+
+    b.onclick=()=>correctStock(p.id);
+
+    el.appendChild(b);
+
+  });
+
+};
 </script></body></html>
