@@ -47,7 +47,7 @@ function renderHistory(){$('historyList').innerHTML=movements.length?movements.m
 function resetForm(){['oldId','pCode','pName','pPrice'].forEach(id=>$(id).value='');$('pDiscount').value='0'}
 function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$('oldId').value=p.id;$('pCode').value=p.barcode;$('pName').value=p.name;$('pPrice').value=p.sale_price;$('pDiscount').value=p.discount_percent;tab('produits');scrollTo(0,0)}
 async function saveProduct(){if(!admin)return;const id=Number($('oldId').value),barcode=$('pCode').value.trim(),name=$('pName').value.trim(),price=Number($('pPrice').value),discount=Number($('pDiscount').value);if(!barcode||!name||$('pPrice').value===''||!Number.isFinite(price)||price<0||!Number.isFinite(discount)||discount<0||discount>100)return msg('Informations produit invalides.',true);const payload=
-{barcode,name,sale_price:price,discount_percent:discount};try{const r=id?await sb.from('products').update(payload).eq('id',id):await sb.from('products').insert(payload);if(r.error)throw r.error;resetForm();await refresh();msg('Produit enregistré.')}catch(e){msg('Produit non enregistré : '+errorText(e),true)}}
+{barcode,name,sale_price:price,discount_percent:discount,sale_unit:$('saleUnit').value};try{const r=id?await sb.from('products').update(payload).eq('id',id):await sb.from('products').insert(payload);if(r.error)throw r.error;resetForm();await refresh();msg('Produit enregistré.')}catch(e){msg('Produit non enregistré : '+errorText(e),true)}}
 async function deleteProduct(id){
  if(!admin||busy)return;
  const p=products.find(x=>Number(x.id)===Number(id));
