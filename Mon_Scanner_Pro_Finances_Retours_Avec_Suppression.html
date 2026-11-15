@@ -673,11 +673,15 @@ async function bcLoad() {
 
     }).join('') || '<p>Aucune commande.</p>';
 
-  } catch(e) {
+    
 
-    msg('Commandes : '+errorText(e), 
+    } catch(e) {
+
+    msg('Commandes : ' + errorText(e), true);
 
   }
+
+}
 
   
 async function bcDeleteClient() {
