@@ -487,6 +487,12 @@ bcPage.innerHTML = `
 
   <select id="bcClient"></select>
 
+
+<button class="gray full" onclick="bcDeleteClient()">
+
+  🗑️ Supprimer client
+
+</button>
   <label>Adresse de livraison *</label>
 
   <input id="bcAddress">
@@ -671,6 +677,44 @@ async function bcLoad() {
 
     msg('Commandes : '+errorText(e), true);
 
+
+async function bcDeleteClient() {
+
+  const id = Number($('bcClient').value);
+
+  if (!id) return alert('Choisissez un client.');
+
+  const client = bcCustomers.find(c => Number(c.id) === id);
+
+  if (!client) return alert('Client introuvable.');
+
+  const check = await sb.from('customer_orders')
+
+    .select('id')
+
+    .eq('customer_id', id)
+
+    .limit(1);
+
+  if (check.error) return alert(errorText(check.error));
+
+  if (check.data.length) {
+
+    return alert('Suppression impossible : ce client a des commandes.');
+
+  }
+
+  if (!confirm('Supprimer définitivement ' + client.name + ' ?')) return;
+
+  const r = await sb.from('customers').delete().eq('id', id);
+
+  if (r.error) return alert(errorText(r.error));
+
+  alert('Client supprimé.');
+
+  await bcLoad();
+
+}
   }
 
 }
