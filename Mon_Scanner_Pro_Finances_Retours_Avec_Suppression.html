@@ -675,9 +675,11 @@ async function bcLoad() {
 
   } catch(e) {
 
-    msg('Commandes : '+errorText(e), true);
+    msg('Commandes : '+errorText(e), 
 
+  }
 
+  
 async function bcDeleteClient() {
 
   const id = Number($('bcClient').value);
@@ -715,9 +717,9 @@ async function bcDeleteClient() {
   await bcLoad();
 
 }
-  }
+  
 
-}
+
 
 async function bcAddClient() {
 
