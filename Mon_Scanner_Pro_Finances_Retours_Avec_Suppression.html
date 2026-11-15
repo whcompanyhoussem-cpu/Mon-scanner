@@ -546,6 +546,15 @@ bcPage.innerHTML = `
   <label>Quantité *</label>
 
   <input id="spQty" type="number" min="1" value="1">
+  <label>Unité *</label>
+
+<select id="spUnit">
+
+  <option value="piece">Pièce</option>
+
+  <option value="meter">Mètre</option>
+
+</select>
 
   <label>Prix total (TND) *</label>
 
@@ -1152,7 +1161,9 @@ p_purchase_unit: $('purchaseUnit').value
 
       p_total_price: total,
 
-      p_advance: advance
+      p_advance: advance,
+
+p_unit: $('spUnit').value
 
     });
 
