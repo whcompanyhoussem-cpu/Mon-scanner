@@ -521,7 +521,47 @@ bcPage.innerHTML = `
   <button class="green full" onclick="bcCreate()">Réserver et créer le bon</button>
 
 </div>
+<div class="card">
 
+  <h2>📦 Commande sur demande</h2>
+
+  <p>Produit pas encore disponible en stock</p>
+
+  <label>Nom du client *</label>
+
+  <input id="spName">
+
+  <label>Téléphone *</label>
+
+  <input id="spPhone" type="tel">
+
+  <label>Adresse de livraison</label>
+
+  <input id="spAddress">
+
+  <label>Description du produit *</label>
+
+  <input id="spProduct">
+
+  <label>Quantité *</label>
+
+  <input id="spQty" type="number" min="1" value="1">
+
+  <label>Prix total (TND) *</label>
+
+  <input id="spTotal" type="number" min="0" step="0.001">
+
+  <label>Avance reçue (TND) *</label>
+
+  <input id="spAdvance" type="number" min="0" step="0.001">
+
+  <button class="green full" onclick="spCreate()">
+
+    Enregistrer la commande et l'avance
+
+  </button>
+
+</div>
 <div class="card">
 
   <h2>📂 Dossiers clients et commandes</h2>
@@ -1054,4 +1094,95 @@ p_purchase_unit: $('purchaseUnit').value
   }
 
 };
+  async function spCreate() {
+
+  if (busy) return;
+
+  const name = $('spName').value.trim();
+
+  const phone = $('spPhone').value.trim();
+
+  const address = $('spAddress').value.trim();
+
+  const productName = $('spProduct').value.trim();
+
+  const quantity = Number($('spQty').value);
+
+  const total = Number($('spTotal').value);
+
+  const advance = Number($('spAdvance').value);
+
+  if (!name || !phone || !productName ||
+
+      !Number.isSafeInteger(quantity) || quantity <= 0 ||
+
+      $('spTotal').value === '' ||
+
+      !Number.isFinite(total) || total <= 0 ||
+
+      $('spAdvance').value === '' ||
+
+      !Number.isFinite(advance) ||
+
+      advance <= 0 || advance > total) {
+
+    return msg('Vérifiez les informations et l’avance.', true);
+
+  }
+
+  if (!confirm('Confirmer la réception de l’avance : ' +
+
+               advance.toFixed(3) + ' TND ?')) return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('create_special_order', {
+
+      p_customer_name: name,
+
+      p_customer_phone: phone,
+
+      p_delivery_address: address,
+
+      p_product_description: productName,
+
+      p_quantity: quantity,
+
+      p_total_price: total,
+
+      p_advance: advance
+
+    });
+
+    if (r.error) throw r.error;
+
+    $('spName').value = '';
+
+    $('spPhone').value = '';
+
+    $('spAddress').value = '';
+
+    $('spProduct').value = '';
+
+    $('spQty').value = '1';
+
+    $('spTotal').value = '';
+
+    $('spAdvance').value = '';
+
+    msg('Commande et avance enregistrées. N° ' + r.data);
+
+  } catch (e) {
+
+    msg('Erreur : ' + errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
 </script></body></html>
