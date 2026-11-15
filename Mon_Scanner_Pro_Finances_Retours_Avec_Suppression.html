@@ -419,4 +419,447 @@ function emailDocument(){
  }catch(e){msg(errorText(e),true)}
 
 }
+ 
+
+// BON DE COMMANDE CLIENT
+
+const bcNav = document.createElement('button');
+
+bcNav.dataset.tab = 'commande';
+
+bcNav.textContent = '📋 Commandes clients';
+
+bcNav.onclick = () => tab('commande');
+
+$('nav').appendChild(bcNav);
+
+const bcPage = document.createElement('section');
+
+bcPage.id = 'commande';
+
+bcPage.className = 'page hidden';
+
+bcPage.innerHTML = `
+
+<div class="card">
+
+  <h2>📋 Bon de commande client</h2>
+
+  <p class="notice">La quantité sera réservée jusqu'à confirmation ou annulation.</p>
+
+  <h3>Nouveau client</h3>
+
+  <label>Nom du client *</label>
+
+  <input id="bcName">
+
+  <label>Téléphone *</label>
+
+  <input id="bcPhone" type="tel">
+
+  <label>Adresse de livraison *</label>
+
+  <input id="bcNewAddress">
+
+  <button class="blue full" onclick="bcAddClient()">Ajouter le client</button>
+
+  <h3 style="margin-top:20px">Nouvelle commande</h3>
+
+  <label>Client *</label>
+
+  <select id="bcClient"></select>
+
+  <label>Adresse de livraison *</label>
+
+  <input id="bcAddress">
+
+  <label>Date de livraison *</label>
+
+  <input id="bcDate" type="date">
+
+  <label>Produit *</label>
+
+  <select id="bcProduct"></select>
+
+  <label>Quantité *</label>
+
+  <input id="bcQty" type="number" min="1" step="1" value="1">
+
+  <button class="green full" onclick="bcCreate()">Réserver et créer le bon</button>
+
+</div>
+
+<div class="card">
+
+  <h2>📂 Dossiers clients et commandes</h2>
+
+  <button class="gray full" onclick="bcLoad()">Actualiser les commandes</button>
+
+  <div id="bcList"></div>
+
+</div>`;
+
+$('app').appendChild(bcPage);
+
+let bcCustomers = [];
+
+let bcOrders = [];
+
+async function bcLoad() {
+
+  try {
+
+    const cr = await sb.from('customers')
+
+      .select('id,customer_code,name,phone,delivery_address')
+
+      .order('id');
+
+    if (cr.error) throw cr.error;
+
+    bcCustomers = cr.data || [];
+
+    $('bcClient').innerHTML = bcCustomers.map(c =>
+
+      `<option value="${c.id}">${safe(c.customer_code)} — ${safe(c.name)}</option>`
+
+    ).join('');
+
+    $('bcProduct').innerHTML = products.map(p =>
+
+      `<option value="${p.id}">${safe(p.name)} — ${money(finalPrice(p))}</option>`
+
+    ).join('');
+
+    const or = await sb.from('customer_orders')
+
+      .select('id,order_number,customer_id,delivery_date,delivery_address,status,total_ttc,amount_paid,remaining_ttc')
+
+      .order('id', {ascending:false});
+
+    if (or.error) throw or.error;
+
+    bcOrders = or.data || [];
+
+    $('bcList').innerHTML = bcOrders.map(o => {
+
+      const c = bcCustomers.find(x => x.id === o.customer_id);
+
+      const pending = o.status === 'pending';
+
+      return `<div class="product">
+
+        <b>${safe(o.order_number || 'BC-'+o.id)}</b>
+
+        <div>Client : ${safe(c?.name || '')}</div>
+
+        <div>Code client : ${safe(c?.customer_code || '')}</div>
+
+        <div>Téléphone : ${safe(c?.phone || '')}</div>
+
+        <div>Livraison : ${safe(o.delivery_date)}</div>
+
+        <div>Adresse : ${safe(o.delivery_address)}</div>
+
+        <div>État : <b>${safe(o.status)}</b></div>
+
+        <div>Total TTC : ${money(o.total_ttc)}</div>
+
+        <div>Payé : ${money(o.amount_paid)}</div>
+
+        <div>Reste : ${money(o.remaining_ttc)}</div>
+
+        <button class="blue" onclick="bcPrint(${o.id})">🖨️ Imprimer BC</button>
+
+        ${pending ? `
+
+          <button class="green" onclick="bcDecision(${o.id},true)">Confirmé</button>
+
+          <button class="red" onclick="bcDecision(${o.id},false)">Non confirmé</button>
+
+          <button class="gray" onclick="bcPayment(${o.id})">💰 Paiement</button>
+
+        ` : ''}
+
+      </div>`;
+
+    }).join('') || '<p>Aucune commande.</p>';
+
+  } catch(e) {
+
+    msg('Commandes : '+errorText(e), true);
+
+  }
+
+}
+
+async function bcAddClient() {
+
+  const name = $('bcName').value.trim();
+
+  const phone = $('bcPhone').value.trim();
+
+  const address = $('bcNewAddress').value.trim();
+
+  if (!name || !phone || !address)
+
+    return msg('Nom, téléphone et adresse obligatoires.', true);
+
+  const r = await sb.from('customers').insert({
+
+    name, phone, delivery_address: address
+
+  });
+
+  if (r.error) return msg(errorText(r.error), true);
+
+  $('bcName').value = '';
+
+  $('bcPhone').value = '';
+
+  $('bcNewAddress').value = '';
+
+  await bcLoad();
+
+  msg('Client enregistré.');
+
+}
+
+async function bcCreate() {
+
+  if (busy) return;
+
+  const customerId = Number($('bcClient').value);
+
+  const productId = Number($('bcProduct').value);
+
+  const quantity = Number($('bcQty').value);
+
+  const address = $('bcAddress').value.trim();
+
+  const date = $('bcDate').value;
+
+  if (!customerId || !productId || !address || !date ||
+
+      !Number.isSafeInteger(quantity) || quantity < 1)
+
+    return msg('Complétez les informations obligatoires.', true);
+
+  if (!confirm('Créer la commande et réserver '+quantity+' pièce(s) ?'))
+
+    return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('create_customer_order', {
+
+      p_customer_id: customerId,
+
+      p_delivery_address: address,
+
+      p_delivery_date: date,
+
+      p_items: [{product_id:productId,quantity}]
+
+    });
+
+    if (r.error) throw r.error;
+
+    await bcLoad();
+
+    msg('Bon de commande créé. Stock réservé.');
+
+  } catch(e) {
+
+    msg('Commande impossible : '+errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+async function bcDecision(id, confirmed) {
+
+  if (busy) return;
+
+  if (!confirm(confirmed
+
+      ? 'Confirmer la commande et créer Facture + Bon de livraison ?'
+
+      : 'Annuler la commande et libérer le stock réservé ?'))
+
+    return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc(
+
+      confirmed ? 'confirm_customer_order' : 'cancel_customer_order',
+
+      {p_order_id:id}
+
+    );
+
+    if (r.error) throw r.error;
+
+    await refresh();
+
+    await bcLoad();
+
+    msg(confirmed
+
+      ? 'Commande confirmée. Facture et livraison créées.'
+
+      : 'Commande annulée. Réservation libérée.');
+
+  } catch(e) {
+
+    msg('Opération impossible : '+errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+async function bcPayment(id) {
+
+  if (busy) return;
+
+  const amount = prompt('Montant reçu en TND :');
+
+  if (amount === null) return;
+
+  const value = Number(amount.replace(',', '.'));
+
+  if (!Number.isFinite(value) || value <= 0)
+
+    return msg('Montant invalide.', true);
+
+  if (!confirm('Enregistrer '+money(value)+' ?')) return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('record_customer_payment', {
+
+      p_order_id:id,
+
+      p_amount:value,
+
+      p_method:'Espèces'
+
+    });
+
+    if (r.error) throw r.error;
+
+    await bcLoad();
+
+    msg('Paiement enregistré.');
+
+  } catch(e) {
+
+    msg('Paiement impossible : '+errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+async function bcPrint(id) {
+
+  const o = bcOrders.find(x => x.id === id);
+
+  if (!o) return;
+
+  const c = bcCustomers.find(x => x.id === o.customer_id);
+
+  const r = await sb.from('customer_order_items')
+
+    .select('product_id,quantity,unit_price_ttc')
+
+    .eq('order_id',id);
+
+  if (r.error) return msg(errorText(r.error),true);
+
+  const lines = (r.data || []).map(i => {
+
+    const p = products.find(x => x.id === i.product_id);
+
+    return `<p>${safe(p?.name || 'Produit #'+i.product_id)}
+
+      — ${i.quantity} × ${money(i.unit_price_ttc)}</p>`;
+
+  }).join('');
+
+  const w = window.open('','_blank');
+
+  if (!w) return msg('Autorisez les fenêtres pop-up.',true);
+
+  w.document.write(`<!doctype html><html><head>
+
+    <meta charset="utf-8">
+
+    <title>Bon de commande</title></head>
+
+    <body style="font:16px Arial;padding:24px">
+
+    <h2>STE ABDELLI BUSINESS</h2>
+
+    <p>Matricule fiscal : 1735982/Q/M/000</p>
+
+    <h2>BON DE COMMANDE CLIENT</h2>
+
+    <p>N° ${safe(o.order_number || '')}</p>
+
+    <p>Client : ${safe(c?.name || '')}</p>
+
+    <p>Code client : ${safe(c?.customer_code || '')}</p>
+
+    <p>Téléphone : ${safe(c?.phone || '')}</p>
+
+    <p>Adresse : ${safe(o.delivery_address)}</p>
+
+    <p>Date de livraison : ${safe(o.delivery_date)}</p>
+
+    <hr>${lines}<hr>
+
+    <p>Total TTC : ${money(o.total_ttc)}</p>
+
+    <p>Payé : ${money(o.amount_paid)}</p>
+
+    <p>Reste : ${money(o.remaining_ttc)}</p>
+
+    <p>État : ${safe(o.status)}</p>
+
+    <button onclick="window.print()">🖨️ Imprimer / PDF</button>
+
+    </body></html>`);
+
+  w.document.close();
+
+}
+
+const bcOldTab = tab;
+
+tab = function(id) {
+
+  bcOldTab(id);
+
+  if (id === 'commande') bcLoad();
+
+};
 </script></body></html>
