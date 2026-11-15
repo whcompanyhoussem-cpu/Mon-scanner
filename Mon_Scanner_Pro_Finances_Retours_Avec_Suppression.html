@@ -1246,4 +1246,43 @@ p_unit: $('spUnit').value
   }
 
 }
+
+
+async function loadPrimes() {
+
+  if (!admin) return;
+
+  const el = $('primeList');
+
+  if (!el) return;
+
+  el.textContent = 'Chargement...';
+
+  try {
+
+    const r = await sb.rpc('get_employee_primes');
+
+    if (r.error) throw r.error;
+
+    el.innerHTML = (r.data || []).map(p => `
+
+      <div class="product">
+
+        <b>${safe(p.first_name)} ${safe(p.last_name)}</b>
+
+        <div>Mètres vendus : ${Number(p.metres_vendus || 0)}</div>
+
+        <div>Prime : ${money(p.prime_tnd || 0)}</div>
+
+      </div>
+
+    `).join('') || '<p>Aucune employée.</p>';
+
+  } catch (e) {
+
+    el.textContent = 'Erreur : ' + errorText(e);
+
+  }
+
+}
 </script></body></html>
