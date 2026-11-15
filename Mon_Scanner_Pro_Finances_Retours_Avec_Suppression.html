@@ -901,4 +901,137 @@ tab = function(id) {
   scan('bcBarcode');
 
 }
+ 
+
+// ACHATS AVEC / SANS FACTURE
+
+const achatPrice = $('aPrice');
+
+achatPrice.insertAdjacentHTML('afterend', `
+
+<label>Type d'achat</label>
+
+<select id="purchaseType" onchange="togglePurchaseInvoice()">
+
+  <option value="avec_facture">Avec facture</option>
+
+  <option value="sans_facture">Sans facture</option>
+
+</select>
+
+<label>Nom du fournisseur *</label>
+
+<input id="purchaseSupplier" placeholder="Fournisseur">
+
+<div id="purchaseInvoiceBox">
+
+  <label>Numéro de facture *</label>
+
+  <input id="purchaseInvoice" placeholder="N° facture">
+
+</div>
+
+`);
+
+function togglePurchaseInvoice() {
+
+  $('purchaseInvoiceBox').classList.toggle(
+
+    'hidden',
+
+    $('purchaseType').value === 'sans_facture'
+
+  );
+
+}
+
+let purchaseRequestId = null;
+
+purchase = async function() {
+
+  if (!admin || busy) return;
+
+  const p = product($('aCode').value);
+
+  const q = qty('aQty');
+
+  const cost = Number($('aPrice').value);
+
+  const type = $('purchaseType').value;
+
+  const supplier = $('purchaseSupplier').value.trim();
+
+  const invoice = $('purchaseInvoice').value.trim();
+
+  if (!p || !q || $('aPrice').value === '' ||
+
+      !Number.isFinite(cost) || cost < 0 ||
+
+      !supplier ||
+
+      (type === 'avec_facture' && !invoice)) {
+
+    return msg('Complétez les informations de l’achat.', true);
+
+  }
+
+  if (!purchaseRequestId) {
+
+    purchaseRequestId = crypto.randomUUID();
+
+  }
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('save_purchase_record', {
+
+      p_type: type,
+
+      p_supplier: supplier,
+
+      p_invoice: type === 'avec_facture' ? invoice : null,
+
+      p_product_id: p.id,
+
+      p_quantity: q,
+
+      p_unit_cost_ttc: cost,
+
+      p_request_id: purchaseRequestId
+
+    });
+
+    if (r.error) throw r.error;
+
+    purchaseRequestId = null;
+
+    $('aCode').value = '';
+
+    $('aQty').value = '1';
+
+    $('aPrice').value = '';
+
+    $('aFound').textContent = '';
+
+    $('purchaseSupplier').value = '';
+
+    $('purchaseInvoice').value = '';
+
+    await refresh();
+
+    msg('Achat enregistré. Stock augmenté.');
+
+  } catch(e) {
+
+    msg('Achat impossible : ' + errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+};
 </script></body></html>
