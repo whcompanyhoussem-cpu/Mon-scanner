@@ -60,7 +60,7 @@ function lookup(t){const p=product($(t+'Code').value);$(t+'Found').textContent=p
 function qty(id){const n=Number($(id).value);return Number.isSafeInteger(n)&&n>0?n:null}
 async function purchase(){if(!admin||busy)return;const p=product($('aCode').value),q=qty('aQty'),cost=Number($('aPrice').value);if(!p||!q||$('aPrice').value===''||!Number.isFinite(cost)||cost<0)return msg('Vérifiez le produit, la quantité et le coût.',true);busy=true;try{const r=await sb.rpc('record_purchase',{p_product_id:p.id,p_quantity:q,p_unit_cost:cost});if(r.error)throw r.error;$('aCode').value='';$('aQty').value='1';$('aPrice').value='';$('aFound').textContent='';await refresh();msg('Achat enregistré. Stock augmenté.')}catch(e){msg('Achat refusé : '+errorText(e),true)}finally{busy=false}}
 async function sale(){if(busy)return;const p=product($('vCode').value),q=qty('vQty');if(!p||!q)return msg('Vérifiez le produit et la quantité.',true);if(q>Number(p.stock_quantity))return msg('Stock insuffisant. Actualisez pour vérifier.',true);busy=true;try{const r=await sb.rpc('record_sale',{p_product_id:p.id,p_quantity:q});if(r.error)throw r.error;const total=finalPrice(p)*q;$('vCode').value='';$('vQty').value='1';$('vFound').textContent='';$('saleInfo').textContent='Scannez un produit pour afficher le prix.';await refresh();msg('Vente enregistrée. Total : '+money(total))}catch(e){msg('Vente refusée : '+errorText(e),true);await refresh()}finally{busy=false}}
-async function scan(t){if(typeof Html5Qrcode==='undefined')return msg('Scanner indisponible. Vérifiez Internet.',true);await stopScan();scanTarget=t;$('scanPanel').classList.remove('hidden');$('scanPanel').scrollIntoView({behavior:'smooth'});try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:150}},async decoded=>{const target=scanTarget;if(!target)return;$(target+'Code').value=decoded;await stopScan();if(target==='a'||target==='v')lookup(target);if(target==='p'){const p=product(decoded);if(p)editProduct(p.id)}},()=>{})}catch(e){msg('Caméra indisponible. Autorisez la caméra dans Safari.',true);await stopScan()}}
+async function scan(t){if(typeof Html5Qrcode==='undefined')return msg('Scanner indisponible. Vérifiez Internet.',true);await stopScan();scanTarget=t;$('scanPanel').classList.remove('hidden');$('scanPanel').scrollIntoView({behavior:'smooth'});try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:150}},async decoded=>{const target=scanTarget;if(!target)return;$(target+'Code').value=decoded;await stopScan();if(target==='a'||target==='v')lookup(target);if(target==='bcBarcode')bcFindBarcode();if(target==='p'){const p=product(decoded);if(p)editProduct(p.id)}},()=>{})}catch(e){msg('Caméra indisponible. Autorisez la caméra dans Safari.',true);await stopScan()}}
 async function stopScan(){scanTarget=null;if(scanner){const s=scanner;scanner=null;try{if(s.isScanning)await s.stop()}catch(e){}try{s.clear()}catch(e){}}$('scanPanel').classList.add('hidden')}
 function isoToday(){return new Date().toLocaleDateString('en-CA')}
 function monthBounds(){const m=$('fMonth').value||isoToday().slice(0,7);const [y,mo]=m.split('-').map(Number);return [m+'-01',new Date(Date.UTC(y,mo,1)).toISOString().slice(0,10)]}
@@ -481,6 +481,21 @@ bcPage.innerHTML = `
 
   <select id="bcProduct"></select>
 
+
+
+<label>Code-barres du produit</label>
+
+<input id="bcBarcode"
+
+       placeholder="Scanner ou saisir le code-barres"
+
+       oninput="bcFindBarcode()">
+
+<button class="blue" onclick="bcScanBarcode()">
+
+  📷 Scanner le code-barres
+
+</button>
   <label>Quantité *</label>
 
   <input id="bcQty" type="number" min="1" step="1" value="1">
@@ -862,4 +877,28 @@ tab = function(id) {
   if (id === 'commande') bcLoad();
 
 };
+ function bcFindBarcode() {
+
+  const code = $('bcBarcode').value.trim();
+
+  if (!code) return;
+
+  const p = products.find(x =>
+
+    String(x.barcode).trim() === code
+
+  );
+
+  if (p) {
+
+    $('bcProduct').value = String(p.id);
+
+  }
+
+}
+ function bcScanBarcode() {
+
+  scan('bcBarcode');
+
+}
 </script></body></html>
