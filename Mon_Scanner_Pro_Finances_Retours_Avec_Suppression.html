@@ -8,7 +8,15 @@
 <nav id="nav"><button data-tab="stock" class="active" onclick="tab('stock')">📦 Stock</button><button data-tab="achat" class="adminOnly" onclick="tab('achat')">🛒 Achat</button><button data-tab="vente" onclick="tab('vente')">💰 Vente</button><button data-tab="produits" class="adminOnly" onclick="tab('produits')">🏷️ Produits</button><button data-tab="historique" class="adminOnly" onclick="tab('historique')">🧾 Historique</button><button data-tab="finances" class="adminOnly" onclick="tab('finances')">📊 Finances</button><button data-tab="retours" onclick="tab('retours')">↩️ Retours</button><button data-tab="donnees" class="adminOnly" onclick="tab('donnees')">💾 Données</button></nav>
 <section id="stock" class="page"><div class="card"><h2>Tableau de bord</h2><div class="stats"><div class="stat">Produits<b id="sProducts">0</b></div><div class="stat">Pièces en stock<b id="sPieces">0</b></div><div class="stat adminOnly">Valeur du stock<b id="sValue">0</b></div><div class="stat adminOnly">Bénéfice estimé des ventes<b id="sProfit">0</b></div></div></div><div class="card"><h2>Stock actuel</h2><input id="search" placeholder="Rechercher un produit" oninput="renderStock()"><div id="stockList"></div></div></section>
 <section id="achat" class="page hidden adminOnly"><div class="card"><h2>🛒 Nouvel achat</h2><label>Code-barres</label><div class="row"><input id="aCode" oninput="lookup('a')"><button class="blue" onclick="scan('a')">📷</button></div><div class="small" id="aFound"></div><label>Quantité achetée</label><input id="aQty" type="number" min="1" step="1" value="1"><label>Prix d'achat unitaire (TND)</label><input id="aPrice" <label>Unité de vente</label>
+<label>Unité d'achat</label>
 
+<select id="purchaseUnit">
+
+  <option value="meter">Mètre</option>
+
+  <option value="piece">Pièce</option>
+
+</select>
 <input id="aPrice" type="number" min="0" step=".001"><button class="green full" onclick="purchase()">Enregistrer l'achat</button></div></section>
 <section id="vente" class="page hidden"><div class="card"><h2>💰 Nouvelle vente</h2><label>Code-barres</label><div class="row"><input id="vCode" oninput="lookup('v')"><button class="blue" onclick="scan('v')">📷</button></div><div class="small" id="vFound"></div><label>Quantité vendue</label><input id="vQty" type="number" min="1" step="1" value="1"><div id="saleInfo" class="notice" style="margin-top:12px">Scannez un produit pour afficher le prix.</div><button class="green full" onclick="sale()">Valider la vente</button></div></section>
 <section id="produits" class="page hidden adminOnly"><div class="card"><h2>🏷️ Fiche produit</h2><input type="hidden" id="oldId"><label>Code-barres</label><div class="row"><input id="pCode"><button class="blue" onclick="scan('p')">📷</button></div><label>Nom du produit</label><input id="pName"><label>Prix de vente (TND)</label><input id="pPrice" type="number" min="0" step=".001"><label>Remise (%)</label><input id="pDiscount" type="number" min="0" max="100" step=".01" value="0"><label>Unité de vente</label>
