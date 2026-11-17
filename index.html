@@ -2,7 +2,7 @@
 <html lang="fr"><head><link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mon Scanner">
-<meta name="application-version" content="2026-11-17-employee-vente-admin-v9">
+<meta name="application-version" content="2026-11-17-prix-vente-direct-v10">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123d68"><title>Mon Scanner Pro — Gestion</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script><style>
 *{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#183047;font:15px Arial,sans-serif}header{background:#123d68;color:#fff;padding:17px;text-align:center}h1{margin:0;font-size:24px}header p{margin:7px 0 0}main{max-width:760px;margin:auto;padding:12px}.card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px #0001}nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}button{border:0;border-radius:9px;padding:11px;font-weight:bold;font-size:14px;cursor:pointer}nav button{background:white;color:#123d68}nav button.active,.blue{background:#123d68;color:white}.green{background:#15804e;color:white}.gray{background:#e8edf2;color:#223a51}.red{background:#bd3939;color:white}.full{width:100%;margin-top:10px}.hidden{display:none!important}h2{font-size:19px;margin:0 0 12px}label{display:block;font-weight:bold;font-size:13px;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #ccd6df;border-radius:9px;font-size:16px}.row{display:flex;gap:8px}.row input{flex:1;min-width:0}.product{border:1px solid #dbe4ed;border-radius:10px;padding:12px;margin:9px 0}.small{font-size:13px;color:#617285;margin-top:6px}.price{color:#087044;font-weight:bold}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat{background:#eaf2fa;padding:12px;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:6px}.notice{background:#fff4d8;padding:10px;border-radius:8px;font-size:13px;line-height:1.5}.error{background:#ffe4e4;color:#8a1c1c;padding:10px;border-radius:8px;white-space:pre-wrap}.ok{background:#e3f5eb;color:#08633b;padding:10px;border-radius:8px}#reader{width:100%}button:disabled{opacity:.55} .flex{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
@@ -869,6 +869,8 @@ bcPage.innerHTML = `
   <label>Produit *</label>
 
   <select id="bcProduct"></select>
+  <div id="bcCurrentPrice" class="notice" role="status" style="margin-top:9px">Prix unitaire actuel : chargement…</div>
+  <p class="small">Prix fixé par l’administrateur (après remise). Mise à jour automatique depuis Supabase.</p>
 
 
 
@@ -972,6 +974,8 @@ async function bcLoad() {
 
     bcCustomers = cr.data || [];
 
+    const previousClient = $('bcClient').value;
+    const previousProduct = $('bcProduct').value;
     $('bcClient').innerHTML = bcCustomers.map(c =>
 
       `<option value="${c.id}">${safe(c.customer_code)} — ${safe(c.name)}</option>`
@@ -983,6 +987,10 @@ async function bcLoad() {
       `<option value="${p.id}">${safe(p.name)} — ${money(finalPrice(p))}</option>`
 
     ).join('');
+
+    if (previousClient && bcCustomers.some(c=>String(c.id)===previousClient)) $('bcClient').value=previousClient;
+    if (previousProduct && products.some(p=>String(p.id)===previousProduct)) $('bcProduct').value=previousProduct;
+    showCurrentOrderUnitPrice();
 
     const or = await sb.from('customer_orders')
 
@@ -1130,6 +1138,9 @@ async function bcAddClient() {
 async function bcCreate() {
 
   if (busy) return;
+  // Always re-read the effective selling price before a new order is confirmed.
+  const currentPricesLoaded = await refreshLiveSellingPrices(true);
+  if (!currentPricesLoaded) return msg('Impossible de vérifier le prix actuel. Vérifiez Internet et réessayez.',true);
 
   const customerId = Number($('bcClient').value);
 
@@ -1147,7 +1158,11 @@ async function bcCreate() {
 
     return msg('Complétez les informations obligatoires.', true);
 
-  if (!confirm('Créer la commande et réserver '+quantity+' pièce(s) ?'))
+  const orderProduct=products.find(p=>Number(p.id)===productId);
+  if (!orderProduct) return msg('Produit indisponible. Actualisez la liste.',true);
+  const orderUnitPrice=finalPrice(orderProduct);
+  if (!Number.isFinite(orderUnitPrice)||orderUnitPrice<0) return msg('Prix de vente invalide. Contactez l’administrateur.',true);
+  if (!confirm('Produit : '+orderProduct.name+'\nPrix unitaire actuel : '+money(orderUnitPrice)+'\nQuantité : '+quantity+'\nTotal estimé : '+money(orderUnitPrice*quantity)+'\n\nCréer la commande et réserver le stock ?'))
 
     return;
 
@@ -1800,5 +1815,52 @@ if('serviceWorker' in navigator){
   regs.forEach(r=>r.update().catch(()=>{}));
  }).catch(()=>{});
 }
+
+
+// V10 — Automatic current selling prices for employees. No averaging of selling prices.
+// No historical transaction is rewritten by this price display update.
+let livePriceRequestInProgress=false;
+function showCurrentOrderUnitPrice(){
+ const el=$('bcCurrentPrice'),select=$('bcProduct');
+ if(!el||!select)return;
+ const p=products.find(x=>String(x.id)===String(select.value));
+ if(!p){el.textContent='Choisissez un produit pour afficher le prix unitaire.';return;}
+ const final=finalPrice(p);
+ el.textContent='Prix unitaire actuel : '+money(final)+' • Prix de vente : '+money(p.sale_price)+' • Remise : '+Number(p.discount_percent||0)+' %';
+}
+function syncOrderProductPrices(){
+ const select=$('bcProduct');if(!select)return;
+ const chosen=select.value;
+ select.innerHTML=products.map(p=>`<option value="${safe(p.id)}">${safe(p.name)} — ${money(finalPrice(p))}</option>`).join('');
+ if(chosen&&products.some(p=>String(p.id)===chosen))select.value=chosen;
+ showCurrentOrderUnitPrice();
+}
+async function refreshLiveSellingPrices(force=false){
+ if(!currentUser||!sb||livePriceRequestInProgress)return false;
+ if(!force&&(busy||document.visibilityState==='hidden'))return false;
+ livePriceRequestInProgress=true;
+ try{
+  const r=admin
+   ?await sb.rpc('admin_products')
+   :await sb.from('employee_products').select('id,barcode,name,sale_price,discount_percent,stock_quantity').order('name');
+  if(r.error)throw r.error;
+  const fresh=(r.data||[]).filter(p=>!p.archived).sort((a,b)=>a.name.localeCompare(b.name));
+  const oldById=new Map(products.map(p=>[String(p.id),p]));
+  const changed=fresh.length!==products.length||fresh.some(p=>{
+   const prev=oldById.get(String(p.id));
+   return !prev||Number(prev.sale_price)!==Number(p.sale_price)||Number(prev.discount_percent)!==Number(p.discount_percent)||Number(prev.stock_quantity)!==Number(p.stock_quantity)||prev.name!==p.name;
+  });
+  products=fresh;
+  if(changed){renderStock();syncOrderProductPrices();}
+  else showCurrentOrderUnitPrice();
+  return true;
+ }catch(e){console.warn('Prix en temps réel indisponibles :',errorText(e));return false;}
+ finally{livePriceRequestInProgress=false;}
+}
+$('bcProduct').addEventListener('change',showCurrentOrderUnitPrice);
+// Refresh periodically while employee app is open and when returning from background.
+setInterval(()=>{if(!admin)void refreshLiveSellingPrices();},20000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!admin)void refreshLiveSellingPrices();});
+window.addEventListener('focus',()=>{if(!admin)void refreshLiveSellingPrices();});
 
 </script></body></html>
