@@ -1,7 +1,12 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123d68"><title>Mon Scanner Pro — Supabase</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><style>
+<html lang="fr"><head><link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mon Scanner">
+<meta name="application-version" content="2026-11-17-stable">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123d68"><title>Mon Scanner Pro — Gestion</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><style>
 *{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#183047;font:15px Arial,sans-serif}header{background:#123d68;color:#fff;padding:17px;text-align:center}h1{margin:0;font-size:24px}header p{margin:7px 0 0}main{max-width:760px;margin:auto;padding:12px}.card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px #0001}nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}button{border:0;border-radius:9px;padding:11px;font-weight:bold;font-size:14px;cursor:pointer}nav button{background:white;color:#123d68}nav button.active,.blue{background:#123d68;color:white}.green{background:#15804e;color:white}.gray{background:#e8edf2;color:#223a51}.red{background:#bd3939;color:white}.full{width:100%;margin-top:10px}.hidden{display:none!important}h2{font-size:19px;margin:0 0 12px}label{display:block;font-weight:bold;font-size:13px;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #ccd6df;border-radius:9px;font-size:16px}.row{display:flex;gap:8px}.row input{flex:1;min-width:0}.product{border:1px solid #dbe4ed;border-radius:10px;padding:12px;margin:9px 0}.small{font-size:13px;color:#617285;margin-top:6px}.price{color:#087044;font-weight:bold}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat{background:#eaf2fa;padding:12px;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:6px}.notice{background:#fff4d8;padding:10px;border-radius:8px;font-size:13px;line-height:1.5}.error{background:#ffe4e4;color:#8a1c1c;padding:10px;border-radius:8px;white-space:pre-wrap}.ok{background:#e3f5eb;color:#08633b;padding:10px;border-radius:8px}#reader{width:100%}button:disabled{opacity:.55} .flex{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-</style></head><body><header><h1>📦 Mon Scanner Pro</h1><p>Stock partagé • Achats • Ventes • Finances • Retours</p></header><main>
+ .actionBar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.actionBar button{flex:1 1 125px;font-size:12px;padding:10px}.actionBar .red{background:#b92f36;color:#fff}.statusnote{font-size:12px;color:#6c5960;margin-top:6px}@media print{nav,.actionBar,button{display:none!important}} </style></head><body><header><h1>📦 Mon Scanner Pro</h1><p>Stock partagé • Achats • Ventes • Finances • Retours</p></header><main>
 <div id="message" class="hidden" role="status"></div>
 <section id="loginPage" class="card"><h2>🔐 Connexion</h2><p class="small">Connectez-vous avec l'adresse du compte Supabase et son mot de passe.</p><label>Adresse e-mail du compte</label><input id="email" type="email" autocomplete="username" placeholder="adresse@gmail.com"><label>Mot de passe</label><input id="password" type="password" autocomplete="current-password"><button class="green full" id="loginBtn" onclick="login()">Se connecter</button><p class="notice">Les comptes vendeuse utilisent pour le moment leur adresse Gmail avec +vendeuse1, +vendeuse2, etc. La connexion par simple nom d'utilisateur sera ajoutée après configuration.</p></section>
 <div id="app" class="hidden"><div class="card flex"><div><b id="who"></b><div class="small" id="role"></div></div><div><button class="gray" onclick="refresh()">🔄 Actualiser</button> <button class="red" onclick="logout()">Déconnexion</button></div></div>
@@ -52,13 +57,27 @@ type="number" min="0" step=".001"><label>Unité d'achat</label>
 'use strict';
 const SUPABASE_URL='https://asrgxpdozfijhvqdaazl.supabase.co';
 const SUPABASE_KEY='sb_publishable_Oim2g5P3Xa4PA-o0s-6UuQ_M59msK3-';
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const sb=window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}}) : null;
 const $=id=>document.getElementById(id);let currentUser=null,profile=null,admin=false,products=[],movements=[],scanner=null,scanTarget=null,busy=false,expenses=[],payroll=[],returnRows=[];
 const money=n=>(Number(n)||0).toFixed(3)+' TND';
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function msg(t,error=false){const e=$('message');e.textContent=t;e.className=error?'error':'ok';e.scrollIntoView({behavior:'smooth',block:'nearest'});}function clearMsg(){$('message').className='hidden'}
 function errorText(e){return e?.message||String(e||'Erreur inconnue')}
-async function login(){clearMsg();$('loginBtn').disabled=true;try{const email=$('email').value.trim(),password=$('password').value;if(!email||!password)throw Error('Saisissez votre e-mail et mot de passe.');const {error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;$('password').value='';await boot();}catch(e){msg('Connexion impossible : '+errorText(e),true)}finally{$('loginBtn').disabled=false}}
+async function login(){
+ clearMsg(); const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Connexion en cours…';
+ try{
+  if(!sb)throw Error('Bibliothèque de connexion non chargée. Ouvrez la version publiée sur GitHub Pages dans Safari, avec Internet.');
+  if(location.protocol==='file:')throw Error('Ce fichier est ouvert depuis Fichiers. Il faut le publier sur GitHub Pages pour tester la connexion.');
+  const email=$('email').value.trim(),password=$('password').value;
+  if(!email||!password)throw Error('Saisissez votre e-mail et mot de passe.');
+  const timeout=new Promise((_,reject)=>setTimeout(()=>reject(Error('Le serveur ne répond pas après 15 secondes. Vérifiez Internet et réessayez.')),15000));
+  const {error}=await Promise.race([sb.auth.signInWithPassword({email,password}),timeout]);
+  if(error)throw error;
+  $('password').value='';
+  await Promise.race([boot(),timeout]);
+ }catch(e){msg('Connexion impossible : '+errorText(e),true)}
+ finally{btn.disabled=false;btn.textContent='Se connecter'}
+}
 async function logout(){await stopScan();await sb.auth.signOut();currentUser=null;profile=null;products=[];movements=[];$('app').classList.add('hidden');$('loginPage').classList.remove('hidden');clearMsg()}
 async function boot(){const {data:{user},error}=await sb.auth.getUser();if(error||!user){$('app').classList.add('hidden');$('loginPage').classList.remove('hidden');return}currentUser=user;const r=await sb.from('staff_profiles').select('full_name,role').eq('user_id',user.id).single();if(r.error||!r.data||!['admin','employee'].includes(r.data.role)){await sb.auth.signOut();throw Error('Compte non autorisé : profil employé ou administrateur introuvable.')}profile=r.data;admin=profile.role==='admin';$('who').textContent=profile.full_name;$('role').textContent=admin?'Administrateur':'Employée';document.querySelectorAll('.adminOnly').forEach(e=>e.classList.toggle('hidden',!admin));$('loginPage').classList.add('hidden');$('app').classList.remove('hidden');tab('stock');await refresh()}
 async function refresh(){clearMsg();try{let r;if(admin){r=await sb.rpc('admin_products')}else{r=await sb.from('employee_products').select('id,barcode,name,sale_price,discount_percent,stock_quantity').order('name')}if(r.error)throw r.error;products=(r.data||[]).filter(p=>!p.archived).sort((a,b)=>a.name.localeCompare(b.name));if(admin){const m=await sb.from('stock_movements').select('id,product_id,movement_type,quantity,unit_price,created_at').order('created_at',{ascending:false}).limit(500);if(m.error)throw m.error;movements=m.data||[]}else movements=[];render()}catch(e){msg('Chargement impossible : '+errorText(e),true)}}
@@ -66,9 +85,22 @@ function tab(id){if(!admin&&['achat','produits','historique','finances','donnees
 function render(){renderStock();if(admin){renderProducts();renderHistory()}}
 function finalPrice(p){return Number(p.sale_price)*(1-Number(p.discount_percent)/100)}
 function product(code){return products.find(p=>p.barcode===String(code||'').trim())}
-function renderStock(){$('sProducts').textContent=products.length;$('sPieces').textContent=products.reduce((s,p)=>s+Number(p.stock_quantity),0);if(admin){$('sValue').textContent=money(products.reduce((s,p)=>s+Number(p.stock_quantity)*Number(p.purchase_price||0),0));$('sProfit').textContent=money(movements.filter(m=>m.movement_type==='sale').reduce((s,m)=>{const p=products.find(x=>x.id===m.product_id);return s+Number(m.quantity)*(Number(m.unit_price)-Number(p?.purchase_price||0))},0))}const q=$('search').value.toLowerCase();const list=products.filter(p=>p.name.toLowerCase().includes(q)||p.barcode.toLowerCase().includes(q));$('stockList').innerHTML=list.length?list.map(p=>`<div class="product"><strong>${safe(p.name)}</strong><div class="small">Code : ${safe(p.barcode)}</div><div>Stock : <b>${Number(p.stock_quantity)} pièces</b></div><div>Prix : ${money(p.sale_price)}</div><div>Remise : ${Number(p.discount_percent)}%</div><div class="price">Prix final : ${money(finalPrice(p))}</div>${admin?`<div class="small">Coût moyen : ${money(p.purchase_price)}</div>`:''}</div>`).join(''):'<p>Aucun produit.</p>'}
-function renderProducts(){$('productList').innerHTML=products.length?products.map(p=>`<div class="product"><strong>${safe(p.name)}</strong><div class="small">${safe(p.barcode)}</div><div>Prix : ${money(p.sale_price)} • Stock : ${p.stock_quantity}</div><button class="blue" onclick="editProduct(${Number(p.id)})">Modifier</button> <button class="red" onclick="deleteProduct(${Number(p.id)})">🗑️ Supprimer</button></div>`).join(''):'<p>Aucun produit.</p>'}
-function renderHistory(){$('historyList').innerHTML=movements.length?movements.map(m=>{const p=products.find(x=>x.id===m.product_id);return `<div class="product"><b>${m.movement_type==='purchase'?'🛒 Achat':'💰 Vente'} : ${safe(p?.name||'Produit #'+m.product_id)}</b><div class="small">${safe(new Date(m.created_at).toLocaleString('fr-FR'))}</div><div>Quantité : ${m.quantity} • Prix : ${money(m.unit_price)}</div></div>`}).join(''):'<p>Aucune opération.</p>'}
+function renderStock(){$('sProducts').textContent=products.length;$('sPieces').textContent=products.reduce((s,p)=>s+Number(p.stock_quantity),0);if(admin){$('sValue').textContent=money(products.reduce((s,p)=>s+Number(p.stock_quantity)*Number(p.purchase_price||0),0));$('sProfit').textContent=money(movements.filter(m=>m.movement_type==='sale').reduce((s,m)=>{const p=products.find(x=>x.id===m.product_id);return s+Number(m.quantity)*(Number(m.unit_price)-Number(p?.purchase_price||0))},0))}const q=$('search').value.toLowerCase();const list=products.filter(p=>p.name.toLowerCase().includes(q)||p.barcode.toLowerCase().includes(q));$('stockList').innerHTML=list.length?list.map(p=>`<div class="product"><strong>${safe(p.name)}</strong><div class="small">Code : ${safe(p.barcode)}</div><div>Stock : <b>${Number(p.stock_quantity)} pièces</b></div><div>Prix : ${money(p.sale_price)}</div><div>Remise : ${Number(p.discount_percent)}%</div><div class="price">Prix final : ${money(finalPrice(p))}</div>${admin?`<div class="small">Coût moyen : ${money(p.purchase_price)}</div><div class="actionBar"><button class="gray" onclick="editProduct(${Number(p.id)})">✏️ Corriger</button><button class="red" onclick="deleteProduct(${Number(p.id)})">🗑️ Supprimer</button><button class="green" onclick="shareProduct(${Number(p.id)})">📲 WhatsApp</button><button class="blue" onclick="printProduct(${Number(p.id)})">🖨️ Imprimer A4</button></div>`:''}</div>`).join(''):'<p>Aucun produit.</p>'}
+function renderProducts(){$('productList').innerHTML=products.length?products.map(p=>`<div class="product"><strong>${safe(p.name)}</strong><div class="small">${safe(p.barcode)}</div><div>Prix : ${money(p.sale_price)} • Stock : ${p.stock_quantity}</div><div class="actionBar"><button class="gray" onclick="editProduct(${Number(p.id)})">✏️ Corriger</button><button class="red" onclick="deleteProduct(${Number(p.id)})">🗑️ Supprimer</button><button class="green" onclick="shareProduct(${Number(p.id)})">📲 WhatsApp</button><button class="blue" onclick="printProduct(${Number(p.id)})">🖨️ Imprimer A4</button></div></div>`).join(''):'<p>Aucun produit.</p>'}
+function renderHistory(){
+ $('historyList').innerHTML=movements.length?movements.map(m=>{
+  const p=products.find(x=>x.id===m.product_id);
+  const type=m.movement_type==='purchase'?'Achat':m.movement_type==='sale'?'Vente':String(m.movement_type);
+  return `<div class="product"><b>${type==='Achat'?'🛒':'💰'} ${safe(type)} : ${safe(p?.name||'Produit #'+m.product_id)}</b>
+  <div class="small">${safe(new Date(m.created_at).toLocaleString('fr-FR'))} · N° ${safe(m.id)}</div>
+  <div>Quantité : ${Number(m.quantity)} • Prix : ${money(m.unit_price)} • Total : ${money(Number(m.quantity)*Number(m.unit_price))}</div>
+  <div class="actionBar"><button class="gray" onclick="movementChangeNotice(${Number(m.id)},'corriger')">✏️ Corriger</button>
+  <button class="red" onclick="movementChangeNotice(${Number(m.id)},'supprimer')">🗑️ Supprimer</button>
+  <button class="green" onclick="shareMovement(${Number(m.id)})">📲 WhatsApp</button>
+  <button class="blue" onclick="printMovement(${Number(m.id)})">🖨️ Imprimer A4</button></div>
+  <div class="statusnote">Correction / suppression : contrôle sécurisé côté base de données requis.</div></div>`;
+ }).join(''):'<p>Aucune opération.</p>';
+}
 function resetForm(){['oldId','pCode','pName','pPrice'].forEach(id=>$(id).value='');$('pDiscount').value='0'}
 function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$('oldId').value=p.id;$('pCode').value=p.barcode;$('pName').value=p.name;$('pPrice').value=p.sale_price;$('pDiscount').value=p.discount_percent;tab('produits');scrollTo(0,0)}
 async function saveProduct(){if(!admin)return;const id=Number($('oldId').value),barcode=$('pCode').value.trim(),name=$('pName').value.trim(),price=Number($('pPrice').value),discount=Number($('pDiscount').value);if(!barcode||!name||$('pPrice').value===''||!Number.isFinite(price)||price<0||!Number.isFinite(discount)||discount<0||discount>100)return msg('Informations produit invalides.',true);const payload=
@@ -98,7 +130,10 @@ async function scan(t){if(typeof Html5Qrcode==='undefined')return msg('Scanner i
 async function stopScan(){scanTarget=null;if(scanner){const s=scanner;scanner=null;try{if(s.isScanning)await s.stop()}catch(e){}try{s.clear()}catch(e){}}$('scanPanel').classList.add('hidden')}
 function isoToday(){return new Date().toLocaleDateString('en-CA')}
 function monthBounds(){const m=$('fMonth').value||isoToday().slice(0,7);const [y,mo]=m.split('-').map(Number);return [m+'-01',new Date(Date.UTC(y,mo,1)).toISOString().slice(0,10)]}
-async function loadFinance(){if(!admin)return;try{const [from,to]=monthBounds();const [er,pr,rr]=await Promise.all([sb.from('business_expenses').select('*').gte('expense_date',from).lt('expense_date',to).order('expense_date',{ascending:false}),sb.from('salary_payments').select('*').gte('paid_on',from).lt('paid_on',to).order('paid_on',{ascending:false}),sb.rpc('list_return_requests')]);for(const r of [er,pr,rr])if(r.error)throw r.error;expenses=er.data||[];payroll=pr.data||[];const returns=(rr.data||[]).filter(r=>r.status==='approved'&&r.approved_at?.slice(0,7)===$('fMonth').value);const sales=movements.filter(m=>m.movement_type==='sale'&&m.created_at?.slice(0,7)===$('fMonth').value);const gross=sales.reduce((s,m)=>{const p=products.find(x=>x.id===m.product_id);return s+Number(m.quantity)*(Number(m.unit_price)-Number(p?.purchase_price||0))},0);const salesTotal=sales.reduce((s,m)=>s+Number(m.quantity)*Number(m.unit_price),0),ex=expenses.reduce((s,e)=>s+Number(e.amount),0),pa=payroll.reduce((s,e)=>s+Number(e.amount),0),refunds=returns.filter(r=>r.return_type==='refund').reduce((s,r)=>s+Number(r.refund_amount||0),0);$('fSales').textContent=money(salesTotal);$('fGross').textContent=money(gross);$('fExpenses').textContent=money(ex);$('fPayroll').textContent=money(pa);$('fRefunds').textContent=money(refunds);$('fNet').textContent=money(gross-ex-pa-refunds);$('expenseList').innerHTML=expenses.map(e=>`<div class="product"><b>${safe(e.label)}</b> — ${money(e.amount)}<div class="small">${safe(e.expense_date)} • ${safe(e.category)}${e.recurring?' • récurrente':''}</div><button class="red" onclick="deleteFinance('business_expenses',${Number(e.id)})">Supprimer</button></div>`).join('')||'<p class="small">Aucune dépense.</p>';$('payrollList').innerHTML=payroll.map(e=>`<div class="product"><b>${safe(e.employee_name)}</b> — ${money(e.amount)}<div class="small">${safe(e.paid_on)}</div><button class="red" onclick="deleteFinance('salary_payments',${Number(e.id)})">Supprimer</button></div>`).join('')||'<p class="small">Aucun salaire.</p>'}catch(e){msg('Finances indisponibles : exécutez d’abord le script SQL fourni. '+errorText(e),true)}}
+async function loadFinance(){if(!admin)return;try{const [from,to]=monthBounds();const [er,pr,rr]=await Promise.all([sb.from('business_expenses').select('*').gte('expense_date',from).lt('expense_date',to).order('expense_date',{ascending:false}),sb.from('salary_payments').select('*').gte('paid_on',from).lt('paid_on',to).order('paid_on',{ascending:false}),sb.rpc('list_return_requests')]);for(const r of [er,pr,rr])if(r.error)throw r.error;expenses=er.data||[];payroll=pr.data||[];const returns=(rr.data||[]).filter(r=>r.status==='approved'&&r.approved_at?.slice(0,7)===$('fMonth').value);const sales=movements.filter(m=>m.movement_type==='sale'&&m.created_at?.slice(0,7)===$('fMonth').value);const gross=sales.reduce((s,m)=>{const p=products.find(x=>x.id===m.product_id);return s+Number(m.quantity)*(Number(m.unit_price)-Number(p?.purchase_price||0))},0);const salesTotal=sales.reduce((s,m)=>s+Number(m.quantity)*Number(m.unit_price),0),ex=expenses.reduce((s,e)=>s+Number(e.amount),0),pa=payroll.reduce((s,e)=>s+Number(e.amount),0),refunds=returns.filter(r=>r.return_type==='refund').reduce((s,r)=>s+Number(r.refund_amount||0),0);$('fSales').textContent=money(salesTotal);$('fGross').textContent=money(gross);$('fExpenses').textContent=money(ex);$('fPayroll').textContent=money(pa);$('fRefunds').textContent=money(refunds);$('fNet').textContent=money(gross-ex-pa-refunds);$('expenseList').innerHTML=expenses.map(e=>`<div class="product"><b>${safe(e.label)}</b> — ${money(e.amount)}<div class="small">${safe(e.expense_date)} • ${safe(e.category)}${e.recurring?' • récurrente':''}</div><button class="red" onclick="deleteFinance('business_expenses',${Number(e.id)})">Supprimer</button></div>`).join('')||'<p class="small">Aucune dépense.</p>';$('payrollList').innerHTML=payroll.map(e=>`<div class="product"><b>${safe(e.employee_name)}</b> — ${money(e.amount)}<div class="small">${safe(e.paid_on)}</div><button class="red" onclick="deleteFinance('salary_payments',${Number(e.id)})">Supprimer</button></div>`).join('')||'<p class="small">Aucun salaire.</p>';
+ document.querySelectorAll('#expenseList .product').forEach((el,i)=>el.insertAdjacentHTML('beforeend',financeButtons('business_expenses',expenses[i].id)));
+ document.querySelectorAll('#payrollList .product').forEach((el,i)=>el.insertAdjacentHTML('beforeend',financeButtons('salary_payments',payroll[i].id)));
+ }catch(e){msg('Finances indisponibles : exécutez d’abord le script SQL fourni. '+errorText(e),true)}}
 async function addExpense(){if(!admin)return;const label=$('eLabel').value.trim(),amount=Number($('eAmount').value);if(!label||!Number.isFinite(amount)||amount<=0||!$('eDate').value)return msg('Complétez la dépense.',true);const r=await sb.from('business_expenses').insert({label,amount,expense_date:$('eDate').value,category:$('eCategory').value,recurring:$('eRecurring').checked});if(r.error)return msg(errorText(r.error),true);$('eLabel').value='';$('eAmount').value='';await loadFinance();msg('Dépense enregistrée.')}
 async function addPayroll(){if(!admin)return;const employee_name=$('payName').value.trim(),amount=Number($('payAmount').value);if(!employee_name||!Number.isFinite(amount)||amount<=0||!$('payDate').value)return msg('Complétez le salaire.',true);const r=await sb.from('salary_payments').insert({employee_name,amount,paid_on:$('payDate').value});if(r.error)return msg(errorText(r.error),true);$('payName').value='';$('payAmount').value='';await loadFinance();msg('Salaire enregistré.')}
 async function deleteFinance(table,id){if(!admin||!confirm('Supprimer cet enregistrement ?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return msg(errorText(r.error),true);await loadFinance();msg('Enregistrement supprimé.')}
@@ -277,7 +312,7 @@ docPage.innerHTML=`
 
 <input id="docNumber" placeholder="Ex : FAC-001">
 
-<label>Client / Fournisseur</label>
+<label>Client</label>
 
 <input id="docClient" placeholder="Nom">
 
@@ -305,7 +340,8 @@ docPage.innerHTML=`
 
 </div>
 
-<div id="docPreview" class="card hidden"></div>`;
+<div id="docPreview" class="card hidden"></div>
+<div class="card"><h3>📁 Brouillons de documents</h3><p class="small">Enregistrés uniquement sur cet appareil et ce navigateur, pas dans Supabase.</p><div id="docDraftList"></div></div>`;
 
 $('app').appendChild(docPage);
 
@@ -343,13 +379,13 @@ function docDetails(){
 
  const vat=hasVat?Math.round((ttc-ht)*1000)/1000:0;
 
- return {type,number,client,item,qty,price,ttc,ht,vat,hasVat};
+ return {type,number,client,address:$('docAddress').value.trim(),email:$('docEmail').value.trim(),item,qty,price,ttc,ht,vat,hasVat};
 
 }
 
 function docHtml(d){
 
- const date=new Date().toLocaleDateString('fr-TN');
+ const date=d.date||new Date().toLocaleDateString('fr-TN');
 
  return `<h2>STE ABDELLI BUSINESS</h2>
 
@@ -360,9 +396,9 @@ function docHtml(d){
 
  <p>N° ${safe(d.number)} — ${date}</p>
 
- <p><b>Client / Fournisseur :</b> ${safe(d.client)}</p>
+ <p><b>Client :</b> ${safe(d.client)}</p>
 
- <p>${safe($('docAddress').value)}</p>
+ <p>${safe(d.address||'')}</p>
 
  <hr>
 
@@ -392,15 +428,19 @@ function previewDocument(){
 
    const d=docDetails();
 
+   saveDocumentDraft(d);
    const el=$('docPreview');
 
    el.classList.remove('hidden');
 
    el.innerHTML=docHtml(d)+
 
-   `<button class="blue full" onclick="printDocument()">🖨️ Imprimer / PDF</button>
+   `<button class="blue full" onclick="printDocument()">🖨️ Imprimer A4 / PDF</button>
+     <button class="green full" onclick="shareDocument()">📲 Envoyer WhatsApp</button>
 
-    <button class="gray full" onclick="emailDocument()">📧 Envoyer par e-mail</button>`;
+    <button class="gray full" onclick="emailDocument()">📧 Envoyer par e-mail</button>
+    <button class="gray full" onclick="editCurrentDocument()">✏️ Corriger</button>
+    <button class="red full" onclick="deleteCurrentDocument()">🗑️ Supprimer ce brouillon</button>`;
 
    el.scrollIntoView({behavior:'smooth'});
 
@@ -454,6 +494,42 @@ function emailDocument(){
 
 }
  
+
+// Documents are drafts stored locally; these actions never alter Supabase transactions.
+const DOC_DRAFT_KEY='mon_scanner_document_drafts_v1';
+let currentDocDraftId=null;
+function getDocumentDrafts(){try{const a=JSON.parse(localStorage.getItem(DOC_DRAFT_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function storeDocumentDrafts(a){try{localStorage.setItem(DOC_DRAFT_KEY,JSON.stringify(a));return true}catch(e){msg('Stockage local indisponible. Brouillon non sauvegardé.',true);return false}}
+function saveDocumentDraft(d){
+ const list=getDocumentDrafts(),id=currentDocDraftId||('doc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+ const draft={...d,id,date:new Date().toLocaleDateString('fr-TN')};
+ const idx=list.findIndex(x=>x.id===id);
+ if(idx<0)list.unshift(draft);else list[idx]=draft;
+ if(storeDocumentDrafts(list)){currentDocDraftId=id;renderDocumentDrafts()}
+}
+function fillDocumentDraft(d){
+ const ids={docType:d.type,docNumber:d.number,docClient:d.client,docAddress:d.address||'',docEmail:d.email||'',docProduct:d.item,docQty:d.qty,docPrice:d.price};
+ Object.entries(ids).forEach(([id,value])=>$(id).value=value);
+ currentDocDraftId=d.id;
+ $('docPreview').classList.add('hidden');
+ $('docType').scrollIntoView({behavior:'smooth'});
+}
+function editCurrentDocument(){const d=getDocumentDrafts().find(x=>x.id===currentDocDraftId);if(d)fillDocumentDraft(d);else msg('Brouillon introuvable.',true)}
+function deleteCurrentDocument(){if(currentDocDraftId)deleteDocumentDraft(currentDocDraftId)}
+function editDocumentDraft(id){const d=getDocumentDrafts().find(x=>x.id===id);if(d)fillDocumentDraft(d)}
+function deleteDocumentDraft(id){
+ if(!confirm('Supprimer ce brouillon local ? Cette action ne touche pas aux ventes, achats ou stock.'))return;
+ const list=getDocumentDrafts().filter(x=>x.id!==id);
+ if(!storeDocumentDrafts(list))return;
+ if(currentDocDraftId===id){currentDocDraftId=null;$('docPreview').classList.add('hidden')}
+ renderDocumentDrafts();msg('Brouillon local supprimé.');
+}
+function renderDocumentDrafts(){
+ const el=$('docDraftList');if(!el)return;
+ const list=getDocumentDrafts();
+ el.innerHTML=list.length?list.map(d=>`<div class="product"><b>${safe(d.type)} — ${safe(d.number)}</b><div class="small">Client : ${safe(d.client)} • ${safe(d.date||'')}</div><div class="actionBar"><button class="gray" onclick="editDocumentDraft('${d.id}')">✏️ Corriger</button><button class="red" onclick="deleteDocumentDraft('${d.id}')">🗑️ Supprimer</button></div></div>`).join(''):'<p class="small">Aucun brouillon enregistré sur cet appareil.</p>';
+}
+renderDocumentDrafts();
 
 // BON DE COMMANDE CLIENT
 
@@ -673,7 +749,12 @@ async function bcLoad() {
 
         <div>Reste : ${money(o.remaining_ttc)}</div>
 
-        <button class="blue" onclick="bcPrint(${o.id})">🖨️ Imprimer BC</button>
+        <div class="actionBar">
+        <button class="blue" onclick="bcPrint(${o.id})">🖨️ Imprimer A4</button>
+        <button class="green" onclick="shareOrder(${o.id})">📲 WhatsApp</button>
+        ${pending?`<button class="gray" onclick="correctOrderDetails(${o.id})">✏️ Corriger</button>
+        <button class="red" onclick="bcDecision(${o.id},false)">🗑️ Annuler</button>`:''}
+        </div>
 
         ${pending ? `
 
@@ -1301,4 +1382,111 @@ async function loadPrimes() {
   }
 
 }
+
+// --- Actions dans les produits, le stock, les finances, les commandes et les documents (version test) ---
+function actionRecord(table,id){
+ const list=table==='business_expenses'?expenses:payroll;
+ return list.find(x=>Number(x.id)===Number(id));
+}
+function financeButtons(table,id){
+ const args=`'${table}',${Number(id)}`;
+ return `<div class="actionBar">
+  <button class="gray" onclick="correctFinance(${args})">✏️ Corriger</button>
+  <button class="red" onclick="deleteFinance(${args})">🗑️ Supprimer</button>
+  <button class="green" onclick="shareFinance(${args})">📲 WhatsApp</button>
+  <button class="blue" onclick="printFinance(${args})">🖨️ Imprimer A4</button></div>`;
+}
+async function correctFinance(table,id){
+ if(!admin||busy||!['business_expenses','salary_payments'].includes(table))return;
+ const x=actionRecord(table,id);if(!x)return msg('Enregistrement introuvable.',true);
+ const label=prompt(table==='business_expenses'?'Libellé de la dépense':'Nom de l’employé',String(table==='business_expenses'?x.label:x.employee_name));
+ if(label===null)return;
+ const price=prompt('Montant TND',String(x.amount));if(price===null)return;
+ const date=prompt('Date (AAAA-MM-JJ)',String(table==='business_expenses'?x.expense_date:x.paid_on));if(date===null)return;
+ const amount=Number(price.replace(',','.'));
+ if(!label.trim()||!Number.isFinite(amount)||amount<=0||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime()))return msg('Données invalides.',true);
+ if(!confirm('Enregistrer la correction de '+label.trim()+' : '+money(amount)+' ?'))return;
+ const payload=table==='business_expenses'?{label:label.trim(),amount,expense_date:date}:{employee_name:label.trim(),amount,paid_on:date};
+ busy=true;try{
+  const r=await sb.from(table).update(payload).eq('id',id).select('id');if(r.error)throw r.error;
+  if(r.data?.length!==1)throw Error('Correction non autorisée ou non sauvegardée.');
+  await loadFinance();msg('Correction enregistrée.');
+ }catch(e){msg('Correction impossible : '+errorText(e),true)}finally{busy=false}
+}
+// Supabase row permissions must allow the operation; verify the changed row.
+deleteFinance=async function(table,id){
+ if(!admin||busy||!['business_expenses','salary_payments'].includes(table))return;
+ const x=actionRecord(table,id);if(!x)return msg('Enregistrement introuvable.',true);
+ if(!confirm('Supprimer cet enregistrement définitivement ? Cette opération ne peut pas être annulée.'))return;
+ busy=true;try{
+  const r=await sb.from(table).delete().eq('id',id).select('id');if(r.error)throw r.error;
+  if(r.data?.length!==1)throw Error('Suppression non autorisée ou non effectuée.');
+  await loadFinance();msg('Enregistrement supprimé.');
+ }catch(e){msg('Suppression impossible : '+errorText(e),true)}finally{busy=false}
+};
+function whatsappText(title,lines){
+ const text=['ABDELLI BUSINESS',title,...lines].join('\n');
+ window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+}
+function printableA4(title,lines){
+ const w=window.open('','_blank');if(!w)return msg('Autorisez les fenêtres pop-up pour imprimer.',true);
+ const body=lines.map(([label,value])=>`<tr><th>${safe(label)}</th><td>${safe(value)}</td></tr>`).join('');
+ w.document.open();w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safe(title)}</title>
+ <style>@page{size:A4;margin:18mm}body{font:14px Arial,sans-serif;color:#183047}header{border-bottom:2px solid #123d68;padding-bottom:16px;margin-bottom:25px}h1{font-size:24px}h2{margin:20px 0}table{border-collapse:collapse;width:100%}th,td{padding:12px;border-bottom:1px solid #d8e0e8;text-align:left}th{width:35%;background:#f3f6f9}.tools{margin-top:30px}@media print{.tools{display:none}}</style></head><body><header><h1>ABDELLI BUSINESS</h1><p>MEDENINE — TUNISIE</p></header><h2>${safe(title)}</h2><table>${body}</table>
+ <div class="tools"><button onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button></div></body></html>`);w.document.close();
+}
+function getMovementInfo(id){
+ const m=movements.find(x=>Number(x.id)===Number(id));if(!m)return null;
+ const p=products.find(x=>x.id===m.product_id),type=m.movement_type==='sale'?'Vente':m.movement_type==='purchase'?'Achat':String(m.movement_type);
+ return {type,lines:[['N° opération',String(m.id)],['Date',new Date(m.created_at).toLocaleString('fr-TN')],['Produit',p?.name||'Produit #'+m.product_id],['Quantité',String(m.quantity)],['Prix unitaire',money(m.unit_price)],['Total',money(Number(m.quantity)*Number(m.unit_price))]]};
+}
+function movementChangeNotice(id,action){
+ if(!admin)return;
+ const x=getMovementInfo(id);if(!x)return;
+ msg('Pour '+action+' cette '+x.type.toLowerCase()+', une fonction transactionnelle sécurisée doit être ajoutée à Supabase (stock, mouvements et paiements). Aucune donnée n’a été modifiée.',true);
+}
+function shareMovement(id){const x=getMovementInfo(id);if(x)whatsappText(x.type,x.lines.map(a=>a.join(' : ')))}
+function printMovement(id){const x=getMovementInfo(id);if(x)printableA4(x.type+' — justificatif',x.lines)}
+function getFinanceInfo(table,id){
+ const x=actionRecord(table,id);if(!x)return null;
+ const isE=table==='business_expenses';return {type:isE?'Dépense':'Salaire',lines:[['N°',String(x.id)],['Libellé',String(isE?x.label:x.employee_name)],['Date',String(isE?x.expense_date:x.paid_on)],['Montant',money(x.amount)]]};
+}
+function shareFinance(t,id){const x=getFinanceInfo(t,id);if(x)whatsappText(x.type,x.lines.map(a=>a.join(' : ')))}
+function printFinance(t,id){const x=getFinanceInfo(t,id);if(x)printableA4(x.type+' — justificatif',x.lines)}
+function productActionInfo(id){
+ const p=products.find(x=>Number(x.id)===Number(id));if(!p)return null;
+ return [['Produit',String(p.name)],['Code-barres',String(p.barcode)],['Stock actuel',String(p.stock_quantity)],['Prix',money(p.sale_price)],['Remise',String(p.discount_percent)+' %'],['Prix final',money(finalPrice(p))]];
+}
+function shareProduct(id){const info=productActionInfo(id);if(info)whatsappText('Fiche produit',info.map(x=>x.join(' : ')))}
+function printProduct(id){const info=productActionInfo(id);if(info)printableA4('Fiche produit',info)}
+function shareOrder(id){
+ const o=bcOrders.find(x=>Number(x.id)===Number(id));if(!o)return;
+ const c=bcCustomers.find(x=>x.id===o.customer_id);
+ whatsappText('Bon de commande '+(o.order_number||'BC-'+o.id),['Client : '+(c?.name||''),'Livraison : '+(o.delivery_date||''),'Adresse : '+(o.delivery_address||''),'Total : '+money(o.total_ttc),'Payé : '+money(o.amount_paid),'Reste : '+money(o.remaining_ttc),'État : '+o.status]);
+}
+async function correctOrderDetails(id){
+ if(!admin||busy)return;const o=bcOrders.find(x=>Number(x.id)===Number(id));
+ if(!o||o.status!=='pending')return msg('Seule une commande en attente peut être corrigée.',true);
+ const address=prompt('Adresse de livraison',o.delivery_address||'');if(address===null)return;
+ const date=prompt('Date livraison (AAAA-MM-JJ)',o.delivery_date||'');if(date===null)return;
+ if(!address.trim()||!/^\d{4}-\d{2}-\d{2}$/.test(date))return msg('Adresse ou date invalide.',true);
+ if(!confirm('Enregistrer la nouvelle adresse et date de livraison ?'))return;
+ busy=true;try{
+  const r=await sb.from('customer_orders').update({delivery_address:address.trim(),delivery_date:date}).eq('id',id).eq('status','pending').select('id');
+  if(r.error)throw r.error;if(r.data?.length!==1)throw Error('Correction non autorisée.');
+  await bcLoad();msg('Commande corrigée.');
+ }catch(e){msg('Correction impossible : '+errorText(e),true)}finally{busy=false}
+}
+function shareDocument(){
+ try{const d=docDetails();whatsappText(d.type+' '+d.number,['Client : '+d.client,'Produit : '+d.item,'Quantité : '+d.qty,'Prix unitaire : '+money(d.price),'Total TTC : '+money(d.ttc),'Brouillon à vérifier']);}
+ catch(e){msg(errorText(e),true)}
+}
+// For plain GitHub Pages, request a fresh document on each online navigation.
+// A previously registered service worker may still control the installed app.
+if('serviceWorker' in navigator){
+ navigator.serviceWorker.getRegistrations().then(regs=>{
+  regs.forEach(r=>r.update().catch(()=>{}));
+ }).catch(()=>{});
+}
+
 </script></body></html>
