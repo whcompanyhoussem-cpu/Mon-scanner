@@ -2031,7 +2031,14 @@ window.addEventListener('focus',()=>{if(!admin)void refreshLiveSellingPrices();}
  <div class="stat">Remboursements<b id="profitRefunds">—</b></div>
  <div class="stat">Bénéfice net<b id="profitNet">—</b></div></div>
  <p id="profitStatus" class="notice">Choisissez une période pour calculer.</p>
- <h3>🧾 Dépenses quotidiennes</h3><div id="profitDailyExpenses" class="small"></div>`;
+ <h3>🧾 Dépenses quotidiennes</h3><div id="profitDailyExpenses" class="small"></div>
+ <hr><h3>📚 Historique des bénéfices</h3>
+ <p class="small">Retrouvez les bénéfices par jour, mois ou année. Les montants sont recalculés depuis les opérations enregistrées ; ils ne sont pas figés.</p>
+ <label>Affichage</label><select id="profitHistoryMode"><option value="day">Journalier</option><option value="month">Mensuel</option><option value="year">Annuel</option></select>
+ <label>Année de référence</label><input type="number" id="profitHistoryYear" min="2000" max="2100" step="1">
+ <button type="button" class="blue full" id="profitHistoryRefresh">📚 Afficher l'historique</button>
+ <p id="profitHistoryStatus" class="small">Choisissez une année, puis affichez l'historique.</p>
+ <div id="profitHistoryList"></div>`;
  const finance=$p('finances');
  if(!finance)return;
  finance.insertBefore(periodPanel,finance.children[1]||null);
@@ -2090,6 +2097,68 @@ window.addEventListener('focus',()=>{if(!admin)void refreshLiveSellingPrices();}
      $p('profitDailyExpenses').innerHTML=dates.length?dates.map(day=>`<div class="product"><b>${day} — ${formatTND(days[day].reduce((n,x)=>n+Number(x.amount),0))}</b>${days[day].map(x=>`<div class="small">${safe(x.label)} • ${safe(x.category)} : ${formatTND(x.amount)}</div>`).join('')}</div>`).join(''):'Aucune dépense enregistrée pour cette période.';
    }catch(e){if(token!==seq)return;$p('profitStatus').textContent='⚠️ Calcul indisponible : '+errorText(e);}
  }
+ // Historique dynamique : aucune table supplémentaire et aucun double comptage.
+ $p('profitHistoryYear').value=new Date().getFullYear();
+ let historySequence=0;
+ const localDay=iso=>new Date(iso).toLocaleDateString('en-CA',{timeZone:'Africa/Tunis'});
+ const groupKey=(day,mode)=>mode==='year'?day.slice(0,4):mode==='month'?day.slice(0,7):day;
+ async function showHistory(){
+   if(!admin)return;
+   const token=++historySequence;
+   const year=Number($p('profitHistoryYear').value),mode=$p('profitHistoryMode').value;
+   const status=$p('profitHistoryStatus'),list=$p('profitHistoryList');
+   if(!Number.isInteger(year)||year<2000||year>2100){status.textContent='Choisissez une année valide.';return;}
+   status.textContent='Chargement de l’historique…';list.innerHTML='';
+   try{
+     // Pour l'historique annuel, afficher les années disponibles à partir de 2020 jusqu'à l'année choisie.
+     const from=mode==='year'?'2020-01-01':`${year}-01-01`;
+     const to=`${year+1}-01-01`;
+     // Les ventes sont datées en UTC; on inclut une marge et on filtre en heure tunisienne.
+     const saleFrom=mode==='year'?'2019-12-31':`${year-1}-12-31`;
+     const saleTo=`${year+1}-01-02`;
+     const [sales,expenses,payments,ret]=await Promise.all([
+       allRows('stock_movements','id,quantity,unit_price,cost_at_sale,created_at,movement_type','created_at',saleFrom,saleTo,true),
+       allRows('business_expenses','id,amount,expense_date','expense_date',from,to),
+       allRows('salary_payments','id,amount,paid_on','paid_on',from,to),
+       sb.rpc('list_return_requests')
+     ]);
+     if(ret.error)throw ret.error;
+     if(token!==historySequence)return;
+     const groups=new Map();
+     const add=(day,field,amount,missing=false)=>{
+       if(!day||day<from||day>=to)return;
+       const key=groupKey(day,mode);
+       if(!groups.has(key))groups.set(key,{sales:0,gross:0,expenses:0,payroll:0,refunds:0,missing:0,count:0});
+       const g=groups.get(key);g[field]+=amount;
+       if(field==='sales'){g.count++;if(missing)g.missing++;}
+     };
+     sales.forEach(x=>{
+       const day=localDay(x.created_at);
+       const missing=x.cost_at_sale==null;
+       add(day,'sales',Number(x.quantity)*Number(x.unit_price),missing);
+       if(!missing)add(day,'gross',Number(x.quantity)*(Number(x.unit_price)-Number(x.cost_at_sale)));
+     });
+     expenses.forEach(x=>add(x.expense_date,'expenses',Number(x.amount)));
+     payments.forEach(x=>add(x.paid_on,'payroll',Number(x.amount)));
+     (ret.data||[]).filter(x=>x.status==='approved'&&x.return_type==='refund').forEach(x=>{
+       if(x.approved_at)add(localDay(x.approved_at),'refunds',Number(x.refund_amount||0));
+     });
+     const keys=[...groups.keys()].sort().reverse();
+     if(!keys.length){status.textContent='Aucune opération enregistrée pour cette période.';return;}
+     const label=k=>mode==='day'?k:mode==='month'?new Date(k+'-01T12:00:00Z').toLocaleDateString('fr-FR',{month:'long',year:'numeric',timeZone:'UTC'}):'Année '+k;
+     list.innerHTML=keys.map(k=>{
+       const g=groups.get(k),net=g.gross-g.expenses-g.payroll-g.refunds;
+       return `<div class="product" style="margin:10px 0"><b>📅 ${safe(label(k))}</b>
+       <div class="small">Ventes : ${formatTND(g.sales)} · Dépenses : ${formatTND(g.expenses)} · Salaires : ${formatTND(g.payroll)} · Remboursements : ${formatTND(g.refunds)}</div>
+       <div><b>Bénéfice brut : ${g.missing?'—':formatTND(g.gross)}</b></div>
+       <div><b>Bénéfice net : ${g.missing?'—':formatTND(net)}</b></div>
+       ${g.missing?`<div class="small">⚠️ ${g.missing} vente(s) sans coût historique. Bénéfice non calculable.</div>`:''}</div>`;
+     }).join('');
+     status.textContent=`${keys.length} période(s) affichée(s). Historique recalculé depuis les données actuelles.`;
+   }catch(e){if(token!==historySequence)return;status.textContent='⚠️ Historique indisponible : '+errorText(e);}
+ }
+ $p('profitHistoryRefresh').onclick=()=>void showHistory();
+ $p('profitHistoryMode').onchange=()=>void showHistory();
  $p('profitRefresh').onclick=()=>void calculate();
  $p('profitPeriod').onchange=()=>void calculate();
  $p('profitDate').onchange=()=>void calculate();
