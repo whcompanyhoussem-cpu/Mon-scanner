@@ -1,0 +1,1576 @@
+<!doctype html>
+<html lang="fr"><head><link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mon Scanner">
+<meta name="application-version" content="2026-11-17-documents-v2">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123d68"><title>Mon Scanner Pro — Gestion</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script><style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#183047;font:15px Arial,sans-serif}header{background:#123d68;color:#fff;padding:17px;text-align:center}h1{margin:0;font-size:24px}header p{margin:7px 0 0}main{max-width:760px;margin:auto;padding:12px}.card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px #0001}nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}button{border:0;border-radius:9px;padding:11px;font-weight:bold;font-size:14px;cursor:pointer}nav button{background:white;color:#123d68}nav button.active,.blue{background:#123d68;color:white}.green{background:#15804e;color:white}.gray{background:#e8edf2;color:#223a51}.red{background:#bd3939;color:white}.full{width:100%;margin-top:10px}.hidden{display:none!important}h2{font-size:19px;margin:0 0 12px}label{display:block;font-weight:bold;font-size:13px;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #ccd6df;border-radius:9px;font-size:16px}.row{display:flex;gap:8px}.row input{flex:1;min-width:0}.product{border:1px solid #dbe4ed;border-radius:10px;padding:12px;margin:9px 0}.small{font-size:13px;color:#617285;margin-top:6px}.price{color:#087044;font-weight:bold}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat{background:#eaf2fa;padding:12px;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:6px}.notice{background:#fff4d8;padding:10px;border-radius:8px;font-size:13px;line-height:1.5}.error{background:#ffe4e4;color:#8a1c1c;padding:10px;border-radius:8px;white-space:pre-wrap}.ok{background:#e3f5eb;color:#08633b;padding:10px;border-radius:8px}#reader{width:100%}button:disabled{opacity:.55} .flex{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+ .actionBar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.actionBar button{flex:1 1 125px;font-size:12px;padding:10px}.actionBar .red{background:#b92f36;color:#fff}.statusnote{font-size:12px;color:#6c5960;margin-top:6px}@media print{nav,.actionBar,button{display:none!important}} </style></head><body><header><h1>📦 Mon Scanner Pro</h1><p>Stock partagé • Achats • Ventes • Finances • Retours</p></header><main>
+<div id="message" class="hidden" role="status"></div>
+<section id="loginPage" class="card"><h2>🔐 Connexion</h2><p class="small">Connectez-vous avec l'adresse du compte Supabase et son mot de passe.</p><label>Adresse e-mail du compte</label><input id="email" type="email" autocomplete="username" placeholder="adresse@gmail.com"><label>Mot de passe</label><input id="password" type="password" autocomplete="current-password"><button class="green full" id="loginBtn" onclick="login()">Se connecter</button><p class="notice">Les comptes vendeuse utilisent pour le moment leur adresse Gmail avec +vendeuse1, +vendeuse2, etc. La connexion par simple nom d'utilisateur sera ajoutée après configuration.</p></section>
+<div id="app" class="hidden"><div class="card flex"><div><b id="who"></b><div class="small" id="role"></div></div><div><button class="gray" onclick="refresh()">🔄 Actualiser</button> <button class="red" onclick="logout()">Déconnexion</button></div></div>
+<nav id="nav"><button data-tab="stock" class="active" onclick="tab('stock')">📦 Stock</button><button data-tab="achat" class="adminOnly" onclick="tab('achat')">🛒 Achat</button><button data-tab="vente" onclick="tab('vente')">💰 Vente</button><button data-tab="produits" class="adminOnly" onclick="tab('produits')">🏷️ Produits</button><button data-tab="historique" class="adminOnly" onclick="tab('historique')">🧾 Historique</button><button data-tab="finances" class="adminOnly" onclick="tab('finances')">📊 Finances</button><button data-tab="retours" onclick="tab('retours')">↩️ Retours</button><button data-tab="donnees" class="adminOnly" onclick="tab('donnees')">💾 Données</button></nav>
+<section id="stock" class="page"><div class="card"><h2>Tableau de bord</h2><div class="stats"><div class="stat">Produits<b id="sProducts">0</b></div><div class="stat">Pièces en stock<b id="sPieces">0</b></div><div class="stat adminOnly">Valeur du stock<b id="sValue">0</b></div><div class="stat adminOnly">Bénéfice estimé des ventes<b id="sProfit">0</b></div></div></div><div class="card"><h2>Stock actuel</h2><input id="search" placeholder="Rechercher un produit" oninput="renderStock()"><div id="stockList"></div></div></section>
+<section id="achat" class="page hidden adminOnly"><div class="card"><h2>🛒 Nouvel achat</h2><label>Code-barres</label><div class="row"><input id="aCode" oninput="lookup('a')"><button class="blue" onclick="scan('a')">📷</button></div><div class="small" id="aFound"></div><label>Quantité achetée</label><input id="aQty" type="number" min="1" step="1" value="1"><label>Prix d'achat unitaire (TND)</label><input id="aPrice"
+type="number" min="0" step=".001"><label>Unité d'achat</label>
+
+<select id="purchaseUnit">
+
+  <option value="meter">Mètre</option>
+
+  <option value="piece">Pièce</option>
+
+</select><button class="green full" onclick="purchase()">Enregistrer l'achat</button></div></section>
+<section id="vente" class="page hidden"><div class="card"><h2>💰 Nouvelle vente</h2><label>Code-barres</label><div class="row"><input id="vCode" oninput="lookup('v')"><button class="blue" onclick="scan('v')">📷</button></div><div class="small" id="vFound"></div><label>Quantité vendue</label><input id="vQty" type="number" min="1" step="1" value="1"><div id="saleInfo" class="notice" style="margin-top:12px">Scannez un produit pour afficher le prix.</div><button class="green full" onclick="sale()">Valider la vente</button></div></section>
+<section id="produits" class="page hidden adminOnly"><div class="card"><h2>🏷️ Fiche produit</h2><input type="hidden" id="oldId"><label>Code-barres</label><div class="row"><input id="pCode"><button class="blue" onclick="scan('p')">📷</button></div><label>Nom du produit</label><input id="pName"><label>Prix de vente (TND)</label><input id="pPrice" type="number" min="0" step=".001"><label>Remise (%)</label><input id="pDiscount" type="number" min="0" max="100" step=".01" value="0"><label>Unité de vente</label>
+
+<select id="saleUnit">
+
+<option value="meter">Mètre</option>
+
+<option value="piece">Pièce</option>
+
+</select><button class="green full" onclick="saveProduct()">Enregistrer le produit</button><button class="gray full" onclick="resetForm()">Nouveau produit</button></div><div class="card"><h2>Mes produits</h2><div id="productList"></div></div></section>
+<section id="historique" class="page hidden adminOnly"><div class="card"><h2>🧾 Historique des mouvements</h2><div id="historyList"></div><p class="small">Le bénéfice est une estimation à partir du coût moyen actuel; les anciens coûts ne sont pas encore historisés par vente.</p></div></section>
+<section id="finances" class="page hidden adminOnly"><div class="card"><h2>📊 Finances</h2><div class="stats"><div class="stat">Ventes enregistrées<b id="fSales">0</b></div><div class="stat">Bénéfice brut estimé<b id="fGross">0</b></div><div class="stat">Dépenses<b id="fExpenses">0</b></div><div class="stat">Salaires<b id="fPayroll">0</b></div><div class="stat">Bénéfice net estimé<b id="fNet">0</b></div><div class="stat">Remboursements validés<b id="fRefunds">0</b></div></div><p class="notice">Montants pour le mois sélectionné. Le bénéfice brut utilise le coût moyen actuel : il reste estimatif. Les remboursements sont enregistrés mais non exécutés automatiquement.</p><label>Mois</label><input id="fMonth" type="month" onchange="loadFinance()"></div><div class="card"><h2>➕ Nouvelle dépense</h2><label>Libellé</label><input id="eLabel" placeholder="Loyer, électricité, transport…"><label>Montant (TND)</label><input id="eAmount" type="number" min="0.001" step="0.001"><label>Date</label><input id="eDate" type="date"><label>Catégorie</label><select id="eCategory"><option value="loyer">Loyer</option><option value="electricite">Électricité</option><option value="transport">Transport</option><option value="fournitures">Fournitures</option><option value="autre">Autre</option></select><label><input id="eRecurring" type="checkbox" style="width:auto"> Dépense récurrente (à saisir chaque mois)</label><button class="green full" onclick="addExpense()">Enregistrer la dépense</button><div id="expenseList"></div></div><div class="card"><h2>👩‍💼 Salaires des employées</h2><label>Nom de l'employée</label><input id="payName" placeholder="Nom"><label>Montant payé (TND)</label><input id="payAmount" type="number" min="0.001" step="0.001"><label>Date du paiement</label><input id="payDate" type="date"><button class="green full" onclick="addPayroll()">Enregistrer le salaire</button><div id="payrollList"></div>
+
+
+<div class="card">
+
+  <h2>💰 Primes des employées</h2>
+
+  <button class="blue" onclick="loadPrimes()">
+
+    Actualiser les primes
+
+  </button>
+
+  <div id="primeList"></div>
+
+</div>
+</div></section>
+<section id="retours" class="page hidden"><div class="card"><h2>↩️ Demande de retour / échange</h2><p class="notice">Chaque retour doit être approuvé par l'administrateur avant la remise en stock. Un remboursement d'argent reste manuel.</p><label>Code-barres</label><div class="row"><input id="rCode"><button class="blue" onclick="scan('r')">📷</button></div><label>Quantité retournée</label><input id="rQty" type="number" min="1" step="1" value="1"><label>Type</label><select id="rType"><option value="refund">Remboursement</option><option value="exchange">Échange</option></select><label>Motif</label><input id="rReason" placeholder="Motif du retour"><button class="green full" onclick="requestReturn()">Envoyer pour approbation</button></div><div class="card"><h2>Demandes de retour</h2><button class="gray full" onclick="loadReturns()">🔄 Actualiser les demandes</button><div id="returnList"></div></div></section>
+<section id="donnees" class="page hidden adminOnly"><div class="card"><h2>💾 Sauvegarde</h2><button class="blue full" onclick="exportJSON()">Exporter les données du cloud en JSON</button><p class="notice">L'importation automatique de l'ancien JSON n'est pas encore activée : elle nécessite une migration contrôlée des quantités et des coûts. Conservez votre sauvegarde d'origine.</p></div></section>
+<div id="scanPanel" class="card hidden"><h2>📷 Scanner</h2><div id="reader"></div><button class="red full" onclick="stopScan()">Fermer la caméra</button></div></div></main>
+<script>
+'use strict';
+const SUPABASE_URL='https://asrgxpdozfijhvqdaazl.supabase.co';
+const SUPABASE_KEY='sb_publishable_Oim2g5P3Xa4PA-o0s-6UuQ_M59msK3-';
+const sb=window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}}) : null;
+const $=id=>document.getElementById(id);let currentUser=null,profile=null,admin=false,products=[],movements=[],scanner=null,scanTarget=null,busy=false,expenses=[],payroll=[],returnRows=[];
+const money=n=>(Number(n)||0).toFixed(3)+' TND';
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function msg(t,error=false){const e=$('message');e.textContent=t;e.className=error?'error':'ok';e.scrollIntoView({behavior:'smooth',block:'nearest'});}function clearMsg(){$('message').className='hidden'}
+function errorText(e){return e?.message||String(e||'Erreur inconnue')}
+async function login(){
+ clearMsg(); const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Connexion en cours…';
+ try{
+  if(!sb)throw Error('Bibliothèque de connexion non chargée. Ouvrez la version publiée sur GitHub Pages dans Safari, avec Internet.');
+  if(location.protocol==='file:')throw Error('Ce fichier est ouvert depuis Fichiers. Il faut le publier sur GitHub Pages pour tester la connexion.');
+  const email=$('email').value.trim(),password=$('password').value;
+  if(!email||!password)throw Error('Saisissez votre e-mail et mot de passe.');
+  const timeout=new Promise((_,reject)=>setTimeout(()=>reject(Error('Le serveur ne répond pas après 15 secondes. Vérifiez Internet et réessayez.')),15000));
+  const {error}=await Promise.race([sb.auth.signInWithPassword({email,password}),timeout]);
+  if(error)throw error;
+  $('password').value='';
+  await Promise.race([boot(),timeout]);
+ }catch(e){msg('Connexion impossible : '+errorText(e),true)}
+ finally{btn.disabled=false;btn.textContent='Se connecter'}
+}
+async function logout(){await stopScan();await sb.auth.signOut();currentUser=null;profile=null;products=[];movements=[];$('app').classList.add('hidden');$('loginPage').classList.remove('hidden');clearMsg()}
+async function boot(){const {data:{user},error}=await sb.auth.getUser();if(error||!user){$('app').classList.add('hidden');$('loginPage').classList.remove('hidden');return}currentUser=user;const r=await sb.from('staff_profiles').select('full_name,role').eq('user_id',user.id).single();if(r.error||!r.data||!['admin','employee'].includes(r.data.role)){await sb.auth.signOut();throw Error('Compte non autorisé : profil employé ou administrateur introuvable.')}profile=r.data;admin=profile.role==='admin';$('who').textContent=profile.full_name;$('role').textContent=admin?'Administrateur':'Employée';document.querySelectorAll('.adminOnly').forEach(e=>e.classList.toggle('hidden',!admin));$('loginPage').classList.add('hidden');$('app').classList.remove('hidden');tab('stock');await refresh()}
+async function refresh(){clearMsg();try{let r;if(admin){r=await sb.rpc('admin_products')}else{r=await sb.from('employee_products').select('id,barcode,name,sale_price,discount_percent,stock_quantity').order('name')}if(r.error)throw r.error;products=(r.data||[]).filter(p=>!p.archived).sort((a,b)=>a.name.localeCompare(b.name));if(admin){const m=await sb.from('stock_movements').select('id,product_id,movement_type,quantity,unit_price,created_at').order('created_at',{ascending:false}).limit(500);if(m.error)throw m.error;movements=m.data||[]}else movements=[];render()}catch(e){msg('Chargement impossible : '+errorText(e),true)}}
+function tab(id){if(!admin&&['achat','produits','historique','finances','donnees'].includes(id))return;document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));stopScan();render();if(id==='finances')loadFinance();if(id==='retours')loadReturns()}
+function render(){renderStock();if(admin){renderProducts();renderHistory()}}
+function finalPrice(p){return Number(p.sale_price)*(1-Number(p.discount_percent)/100)}
+function product(code){return products.find(p=>p.barcode===String(code||'').trim())}
+function renderStock(){$('sProducts').textContent=products.length;$('sPieces').textContent=products.reduce((s,p)=>s+Number(p.stock_quantity),0);if(admin){$('sValue').textContent=money(products.reduce((s,p)=>s+Number(p.stock_quantity)*Number(p.purchase_price||0),0));$('sProfit').textContent=money(movements.filter(m=>m.movement_type==='sale').reduce((s,m)=>{const p=products.find(x=>x.id===m.product_id);return s+Number(m.quantity)*(Number(m.unit_price)-Number(p?.purchase_price||0))},0))}const q=$('search').value.toLowerCase();const list=products.filter(p=>p.name.toLowerCase().includes(q)||p.barcode.toLowerCase().includes(q));$('stockList').innerHTML=list.length?list.map(p=>`<div class="product"><strong>${safe(p.name)}</strong><div class="small">Code : ${safe(p.barcode)}</div><div>Stock : <b>${Number(p.stock_quantity)} pièces</b></div><div>Prix : ${money(p.sale_price)}</div><div>Remise : ${Number(p.discount_percent)}%</div><div class="price">Prix final : ${money(finalPrice(p))}</div>${admin?`<div class="small">Coût moyen : ${money(p.purchase_price)}</div><div class="actionBar"><button class="gray" onclick="editProduct(${Number(p.id)})">✏️ Corriger</button><button class="red" onclick="deleteProduct(${Number(p.id)})">🗑️ Supprimer</button><button class="green" onclick="shareProduct(${Number(p.id)})">📲 WhatsApp</button><button class="blue" onclick="printProduct(${Number(p.id)})">🖨️ Imprimer A4</button></div>`:''}</div>`).join(''):'<p>Aucun produit.</p>'}
+function renderProducts(){$('productList').innerHTML=products.length?products.map(p=>`<div class="product"><strong>${safe(p.name)}</strong><div class="small">${safe(p.barcode)}</div><div>Prix : ${money(p.sale_price)} • Stock : ${p.stock_quantity}</div><div class="actionBar"><button class="gray" onclick="editProduct(${Number(p.id)})">✏️ Corriger</button><button class="red" onclick="deleteProduct(${Number(p.id)})">🗑️ Supprimer</button><button class="green" onclick="shareProduct(${Number(p.id)})">📲 WhatsApp</button><button class="blue" onclick="printProduct(${Number(p.id)})">🖨️ Imprimer A4</button></div></div>`).join(''):'<p>Aucun produit.</p>'}
+function renderHistory(){
+ $('historyList').innerHTML=movements.length?movements.map(m=>{
+  const p=products.find(x=>x.id===m.product_id);
+  const type=m.movement_type==='purchase'?'Achat':m.movement_type==='sale'?'Vente':String(m.movement_type);
+  return `<div class="product"><b>${type==='Achat'?'🛒':'💰'} ${safe(type)} : ${safe(p?.name||'Produit #'+m.product_id)}</b>
+  <div class="small">${safe(new Date(m.created_at).toLocaleString('fr-FR'))} · N° ${safe(m.id)}</div>
+  <div>Quantité : ${Number(m.quantity)} • Prix : ${money(m.unit_price)} • Total : ${money(Number(m.quantity)*Number(m.unit_price))}</div>
+  <div class="actionBar"><button class="gray" onclick="movementChangeNotice(${Number(m.id)},'corriger')">✏️ Corriger</button>
+  <button class="red" onclick="movementChangeNotice(${Number(m.id)},'supprimer')">🗑️ Supprimer</button>
+  <button class="green" onclick="shareMovement(${Number(m.id)})">📲 WhatsApp</button>
+  <button class="blue" onclick="printMovement(${Number(m.id)})">🖨️ Imprimer A4</button></div>
+  ${['sale','purchase'].includes(m.movement_type)?`<div class="actionBar"><button class="blue" onclick="convertMovementToDocument(${Number(m.id)},'Facture')">📄 Transformer en facture PDF</button><button class="green" onclick="convertMovementToDocument(${Number(m.id)},'Bon de livraison')">📦 Transformer en bon de livraison</button></div>`:''}
+  <div class="statusnote">Correction / suppression : contrôle sécurisé côté base de données requis.</div></div>`;
+ }).join(''):'<p>Aucune opération.</p>';
+}
+function resetForm(){['oldId','pCode','pName','pPrice'].forEach(id=>$(id).value='');$('pDiscount').value='0'}
+function editProduct(id){const p=products.find(x=>x.id===id);if(!p)return;$('oldId').value=p.id;$('pCode').value=p.barcode;$('pName').value=p.name;$('pPrice').value=p.sale_price;$('pDiscount').value=p.discount_percent;tab('produits');scrollTo(0,0)}
+async function saveProduct(){if(!admin)return;const id=Number($('oldId').value),barcode=$('pCode').value.trim(),name=$('pName').value.trim(),price=Number($('pPrice').value),discount=Number($('pDiscount').value);if(!barcode||!name||$('pPrice').value===''||!Number.isFinite(price)||price<0||!Number.isFinite(discount)||discount<0||discount>100)return msg('Informations produit invalides.',true);const payload=
+{barcode,name,sale_price:price,discount_percent:discount,sale_unit:$('saleUnit').value};try{const r=id?await sb.from('products').update(payload).eq('id',id):await sb.from('products').insert(payload);if(r.error)throw r.error;resetForm();await refresh();msg('Produit enregistré.')}catch(e){msg('Produit non enregistré : '+errorText(e),true)}}
+async function deleteProduct(id){
+ if(!admin||busy)return;
+ const p=products.find(x=>Number(x.id)===Number(id));
+ if(!p)return msg('Produit introuvable. Actualisez.',true);
+ const warning='Supprimer définitivement « '+p.name+' » (code '+p.barcode+') ?\nStock actuel : '+p.stock_quantity+' pièce(s).\nCette opération est irréversible. Les mouvements et retours liés peuvent empêcher la suppression.';
+ if(!confirm(warning))return;
+ busy=true;
+ try{
+  const r=await sb.from('products').update({archived:true}).eq('id',p.id).select('id');
+  if(r.error)throw r.error;
+  if(!r.data||r.data.length!==1)throw Error('Suppression non autorisée ou non effectuée. Vérifiez les permissions Supabase.');
+  if(Number($('oldId').value)===Number(id))resetForm();
+  await refresh();
+  msg('Produit supprimé : '+p.name+'.');
+ }catch(e){msg('Suppression impossible : '+errorText(e)+'. Vérifiez les références aux mouvements et les autorisations Supabase.',true)}
+ finally{busy=false}
+}
+function lookup(t){const p=product($(t+'Code').value);$(t+'Found').textContent=p?p.name+' | Stock : '+p.stock_quantity:'Produit non trouvé';if(t==='a'&&p)$('aPrice').value=p.purchase_price??'';if(t==='v')$('saleInfo').textContent=p?'Prix final : '+money(finalPrice(p))+' | Stock disponible : '+p.stock_quantity:'Scannez un produit existant.'}
+function qty(id){const n=Number($(id).value);return Number.isSafeInteger(n)&&n>0?n:null}
+async function purchase(){if(!admin||busy)return;const p=product($('aCode').value),q=qty('aQty'),cost=Number($('aPrice').value);if(!p||!q||$('aPrice').value===''||!Number.isFinite(cost)||cost<0)return msg('Vérifiez le produit, la quantité et le coût.',true);busy=true;try{const r=await sb.rpc('record_purchase',{p_product_id:p.id,p_quantity:q,p_unit_cost:cost});if(r.error)throw r.error;$('aCode').value='';$('aQty').value='1';$('aPrice').value='';$('aFound').textContent='';await refresh();msg('Achat enregistré. Stock augmenté.')}catch(e){msg('Achat refusé : '+errorText(e),true)}finally{busy=false}}
+async function sale(){if(busy)return;const p=product($('vCode').value),q=qty('vQty');if(!p||!q)return msg('Vérifiez le produit et la quantité.',true);if(q>Number(p.stock_quantity))return msg('Stock insuffisant. Actualisez pour vérifier.',true);busy=true;try{const r=await sb.rpc('record_sale',{p_product_id:p.id,p_quantity:q});if(r.error)throw r.error;const total=finalPrice(p)*q;$('vCode').value='';$('vQty').value='1';$('vFound').textContent='';$('saleInfo').textContent='Scannez un produit pour afficher le prix.';await refresh();msg('Vente enregistrée. Total : '+money(total))}catch(e){msg('Vente refusée : '+errorText(e),true);await refresh()}finally{busy=false}}
+async function scan(t){if(typeof Html5Qrcode==='undefined')return msg('Scanner indisponible. Vérifiez Internet.',true);await stopScan();scanTarget=t;$('scanPanel').classList.remove('hidden');$('scanPanel').scrollIntoView({behavior:'smooth'});try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:150}},async decoded=>{const target=scanTarget;if(!target)return;$(target+'Code').value=decoded;await stopScan();if(target==='a'||target==='v')lookup(target);if(target==='bcBarcode')bcFindBarcode();if(target==='p'){const p=product(decoded);if(p)editProduct(p.id)}},()=>{})}catch(e){msg('Caméra indisponible. Autorisez la caméra dans Safari.',true);await stopScan()}}
+async function stopScan(){scanTarget=null;if(scanner){const s=scanner;scanner=null;try{if(s.isScanning)await s.stop()}catch(e){}try{s.clear()}catch(e){}}$('scanPanel').classList.add('hidden')}
+function isoToday(){return new Date().toLocaleDateString('en-CA')}
+function monthBounds(){const m=$('fMonth').value||isoToday().slice(0,7);const [y,mo]=m.split('-').map(Number);return [m+'-01',new Date(Date.UTC(y,mo,1)).toISOString().slice(0,10)]}
+async function loadFinance(){if(!admin)return;try{const [from,to]=monthBounds();const [er,pr,rr]=await Promise.all([sb.from('business_expenses').select('*').gte('expense_date',from).lt('expense_date',to).order('expense_date',{ascending:false}),sb.from('salary_payments').select('*').gte('paid_on',from).lt('paid_on',to).order('paid_on',{ascending:false}),sb.rpc('list_return_requests')]);for(const r of [er,pr,rr])if(r.error)throw r.error;expenses=er.data||[];payroll=pr.data||[];const returns=(rr.data||[]).filter(r=>r.status==='approved'&&r.approved_at?.slice(0,7)===$('fMonth').value);const sales=movements.filter(m=>m.movement_type==='sale'&&m.created_at?.slice(0,7)===$('fMonth').value);const gross=sales.reduce((s,m)=>{const p=products.find(x=>x.id===m.product_id);return s+Number(m.quantity)*(Number(m.unit_price)-Number(p?.purchase_price||0))},0);const salesTotal=sales.reduce((s,m)=>s+Number(m.quantity)*Number(m.unit_price),0),ex=expenses.reduce((s,e)=>s+Number(e.amount),0),pa=payroll.reduce((s,e)=>s+Number(e.amount),0),refunds=returns.filter(r=>r.return_type==='refund').reduce((s,r)=>s+Number(r.refund_amount||0),0);$('fSales').textContent=money(salesTotal);$('fGross').textContent=money(gross);$('fExpenses').textContent=money(ex);$('fPayroll').textContent=money(pa);$('fRefunds').textContent=money(refunds);$('fNet').textContent=money(gross-ex-pa-refunds);$('expenseList').innerHTML=expenses.map(e=>`<div class="product"><b>${safe(e.label)}</b> — ${money(e.amount)}<div class="small">${safe(e.expense_date)} • ${safe(e.category)}${e.recurring?' • récurrente':''}</div><button class="red" onclick="deleteFinance('business_expenses',${Number(e.id)})">Supprimer</button></div>`).join('')||'<p class="small">Aucune dépense.</p>';$('payrollList').innerHTML=payroll.map(e=>`<div class="product"><b>${safe(e.employee_name)}</b> — ${money(e.amount)}<div class="small">${safe(e.paid_on)}</div><button class="red" onclick="deleteFinance('salary_payments',${Number(e.id)})">Supprimer</button></div>`).join('')||'<p class="small">Aucun salaire.</p>';
+ document.querySelectorAll('#expenseList .product').forEach((el,i)=>el.insertAdjacentHTML('beforeend',financeButtons('business_expenses',expenses[i].id)));
+ document.querySelectorAll('#payrollList .product').forEach((el,i)=>el.insertAdjacentHTML('beforeend',financeButtons('salary_payments',payroll[i].id)));
+ }catch(e){msg('Finances indisponibles : exécutez d’abord le script SQL fourni. '+errorText(e),true)}}
+async function addExpense(){if(!admin)return;const label=$('eLabel').value.trim(),amount=Number($('eAmount').value);if(!label||!Number.isFinite(amount)||amount<=0||!$('eDate').value)return msg('Complétez la dépense.',true);const r=await sb.from('business_expenses').insert({label,amount,expense_date:$('eDate').value,category:$('eCategory').value,recurring:$('eRecurring').checked});if(r.error)return msg(errorText(r.error),true);$('eLabel').value='';$('eAmount').value='';await loadFinance();msg('Dépense enregistrée.')}
+async function addPayroll(){if(!admin)return;const employee_name=$('payName').value.trim(),amount=Number($('payAmount').value);if(!employee_name||!Number.isFinite(amount)||amount<=0||!$('payDate').value)return msg('Complétez le salaire.',true);const r=await sb.from('salary_payments').insert({employee_name,amount,paid_on:$('payDate').value});if(r.error)return msg(errorText(r.error),true);$('payName').value='';$('payAmount').value='';await loadFinance();msg('Salaire enregistré.')}
+async function deleteFinance(table,id){if(!admin||!confirm('Supprimer cet enregistrement ?'))return;const r=await sb.from(table).delete().eq('id',id);if(r.error)return msg(errorText(r.error),true);await loadFinance();msg('Enregistrement supprimé.')}
+async function requestReturn(){if(busy)return;const p=product($('rCode').value),q=qty('rQty'),reason=$('rReason').value.trim();if(!p||!q||!reason)return msg('Vérifiez le produit, la quantité et le motif.',true);busy=true;try{const r=await sb.rpc('create_return_request',{p_product_id:p.id,p_quantity:q,p_return_type:$('rType').value,p_reason:reason});if(r.error)throw r.error;$('rCode').value='';$('rQty').value='1';$('rReason').value='';await loadReturns();msg('Demande envoyée. En attente de validation du directeur.')}catch(e){msg('Retour non envoyé : '+errorText(e),true)}finally{busy=false}}
+async function decideReturn(id,approved){if(!admin||busy)return;let refund=0;if(approved){const row=returnRows.find(r=>Number(r.id)===id);if(row?.return_type==='refund'){const val=prompt('Montant remboursé manuellement en TND (0 si aucun) :','0');if(val===null)return;refund=Number(val);if(!Number.isFinite(refund)||refund<0)return msg('Montant invalide.',true)}if(!confirm('Confirmer la validation ? Le stock sera augmenté.'))return}else if(!confirm('Refuser cette demande ?'))return;busy=true;try{const r=await sb.rpc('decide_return_request',{p_request_id:id,p_approve:approved,p_refund_amount:refund});if(r.error)throw r.error;await refresh();await loadReturns();msg(approved?'Retour approuvé et stock mis à jour. Remboursement à effectuer manuellement.':'Retour refusé.')}catch(e){msg('Décision impossible : '+errorText(e),true)}finally{busy=false}}
+async function loadReturns(){try{const r=await sb.rpc('list_return_requests');if(r.error)throw r.error;returnRows=r.data||[];$('returnList').innerHTML=returnRows.map(x=>`<div class="product"><b>${safe(x.product_name||'Produit')} — ${Number(x.quantity)} pièce(s)</b><div class="small">${safe(x.return_type==='refund'?'Remboursement':'Échange')} • ${safe(x.status)} • ${safe(new Date(x.created_at).toLocaleString('fr-FR'))}</div><div>Motif : ${safe(x.reason)}</div>${admin&&x.status==='pending'?`<div class="row" style="margin-top:8px"><button class="green" onclick="decideReturn(${Number(x.id)},true)">Approuver</button><button class="red" onclick="decideReturn(${Number(x.id)},false)">Refuser</button></div>`:''}${admin&&x.status==='approved'?`<div class="small">Remboursement déclaré : ${money(x.refund_amount||0)}</div>`:''}</div>`).join('')||'<p>Aucune demande.</p>'}catch(e){msg('Retours indisponibles : exécutez d’abord le script SQL fourni. '+errorText(e),true)}}
+function exportJSON(){if(!admin)return;const blob=new Blob([JSON.stringify({app:'Mon Scanner Pro',exportedAt:new Date().toISOString(),products,movements,expenses,payroll,returnRows},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='mon-scanner-cloud-export.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+$('fMonth').value=isoToday().slice(0,7);$('eDate').value=isoToday();$('payDate').value=isoToday();(async()=>{try{await boot()}catch(e){msg(errorText(e),true)}})();
+ async function correctStock(id){
+
+  if(!admin||busy)return;
+
+  const p=products.find(x=>Number(x.id)===Number(id));
+
+  if(!p)return;
+
+  const val=prompt('Quantité correcte pour '+p.name+' (actuel : '+p.stock_quantity+') :',String(p.stock_quantity));
+
+  if(val===null)return;
+
+  const n=Number(val);
+
+  if(!Number.isSafeInteger(n)||n<0)return alert('Quantité invalide');
+
+  const reason=prompt('Motif de la correction :');
+
+  if(reason===null)return;
+
+  if(reason.trim().length<3)return alert('Indiquez un motif');
+
+  if(!confirm('Corriger '+p.name+' : '+p.stock_quantity+' → '+n+' ?'))return;
+
+  busy=true;
+
+  try{
+
+    const r=await sb.rpc('correct_stock',{p_product_id:p.id,p_new_quantity:n,p_reason:reason.trim()});
+
+    if(r.error)throw r.error;
+
+    await refresh();
+
+    msg('Stock corrigé avec succès.');
+
+  }catch(e){
+
+    msg('Correction impossible : '+errorText(e),true);
+
+  }finally{busy=false}
+
+}
+
+const originalRenderProducts=renderProducts;
+
+renderProducts=function(){
+
+  originalRenderProducts();
+
+  if(!admin)return;
+
+  document.querySelectorAll('#productList .product').forEach((el,i)=>{
+
+    const p=products[i];
+
+    if(!p)return;
+
+    const b=document.createElement('button');
+
+    b.className='gray';
+
+    b.textContent='✏️ Corriger le stock';
+
+    b.style.marginLeft='8px';
+
+    b.onclick=()=>correctStock(p.id);
+
+    el.appendChild(b);
+
+  });
+
+};
+function printBarcode(id){
+
+  if(!admin)return;
+
+  const p=products.find(x=>Number(x.id)===Number(id));
+
+  if(!p)return;
+
+  const url='https://bwipjs-api.metafloor.com/?bcid=code128&text='+encodeURIComponent(p.barcode)+'&includetext&scale=3';
+
+  const w=window.open('','_blank');
+
+  if(!w)return alert('Autorisez les fenêtres pop-up');
+
+  w.document.body.innerHTML=
+
+    '<h3>'+safe(p.name)+'</h3>'+
+
+    '<img style="max-width:100%" src="'+url+'">'+
+
+    '<p><button onclick="window.print()">🖨️ Imprimer</button></p>';
+
+}
+
+const renderAvantBarcode=renderProducts;
+
+renderProducts=function(){
+
+  renderAvantBarcode();
+
+  if(!admin)return;
+
+  document.querySelectorAll('#productList .product').forEach((el,i)=>{
+
+    const p=products[i];
+
+    if(!p)return;
+
+    const b=document.createElement('button');
+
+    b.className='blue';
+
+    b.textContent='🏷️ Générer & Imprimer code-barres';
+
+    b.onclick=()=>printBarcode(p.id);
+
+    el.appendChild(b);
+
+  });
+
+}; 
+ 
+
+const docNav=document.createElement('button');
+
+docNav.className='adminOnly';
+
+docNav.dataset.tab='documents';
+
+docNav.textContent='📄 Documents';
+
+docNav.onclick=()=>tab('documents');
+
+$('nav').appendChild(docNav);
+
+const docPage=document.createElement('section');
+
+docPage.id='documents';
+
+docPage.className='page hidden adminOnly';
+
+docPage.innerHTML=`
+
+<div class="card">
+
+<h2>📄 Documents — STE ABDELLI BUSINESS</h2>
+
+<p class="notice">Brouillon à vérifier avant émission officielle.</p>
+
+<label>Type de document</label>
+
+<select id="docType" onchange="onDocumentTypeChange()">
+
+<option value="Facture">Facture</option>
+
+<option value="Bon de livraison">Bon de livraison</option>
+
+<option value="Bon de commande">Bon de commande</option>
+
+<option value="Bon de retour">Bon de retour</option>
+
+</select>
+
+<label>Numéro du document</label>
+
+<input id="docNumber" placeholder="Généré automatiquement" readonly><p class="small">Numéro attribué à la préparation. Pour une opération Historique, il reste identique à chaque réouverture.</p><input type="hidden" id="docMovementId"><input type="hidden" id="docMovementKind">
+
+<label>Client</label>
+
+<input id="docClient" placeholder="Nom">
+
+<label>Adresse</label>
+
+<input id="docAddress" placeholder="Adresse">
+
+<label>E-mail</label>
+
+<input id="docEmail" type="email" placeholder="client@email.com">
+
+<div id="docDriverFields" class="hidden">
+<label>Nom du chauffeur</label><input id="docDriver" placeholder="Nom et prénom">
+<label>N° CIN du chauffeur</label><input id="docDriverCin" inputmode="numeric" placeholder="N° carte d’identité">
+<label>Matricule du véhicule</label><input id="docVehicle" placeholder="Immatriculation">
+<label>Date de livraison</label><input id="docDeliveryDate" type="date">
+</div>
+<label>Produit</label>
+
+<input id="docProduct" placeholder="Nom du produit">
+
+<label>Quantité</label>
+
+<input id="docQty" type="number" min="1" value="1">
+
+<label>Prix unitaire TTC (TND)</label>
+
+<input id="docPrice" type="number" min="0" step=".001">
+
+<button class="blue full" onclick="previewDocument()">📄 Préparer et enregistrer le brouillon</button><button class="gray full" onclick="resetDocumentForNew()">➕ Nouveau document</button>
+<p class="notice">Les factures et bons générés sont des brouillons à vérifier. La numérotation des documents créés manuellement est locale sur cet appareil, non garantie entre plusieurs appareils. Pour une numérotation fiscale centralisée, une table sécurisée Supabase est nécessaire.</p>
+
+</div>
+
+<div id="docPreview" class="card hidden"></div>
+<div class="card"><h3>📁 Brouillons de documents</h3><p class="small">Enregistrés uniquement sur cet appareil et ce navigateur, pas dans Supabase.</p><div id="docDraftList"></div></div>`;
+
+$('app').appendChild(docPage);
+
+function docTypePrefix(type){return ({'Facture':'FAC','Bon de livraison':'BL','Bon de commande':'BC','Bon de retour':'BR'})[type]||'DOC'}
+function documentNumber(type,movementId,created){
+ const year=created?new Date(created).getFullYear():new Date().getFullYear();
+ const prefix=docTypePrefix(type);
+ if(movementId)return `${prefix}-${year}-${String(movementId).padStart(6,'0')}`;
+ // Local drafts: separate namespace from Supabase movement IDs, preventing accidental overlap.
+ const key='mon_scanner_doc_seq_v2_'+prefix+'_'+year;
+ let n=0;try{n=Number(localStorage.getItem(key)||0)}catch(e){}
+ n+=1;try{localStorage.setItem(key,String(n))}catch(e){throw Error('Stockage local indisponible : impossible de garantir le numéro du brouillon.');}
+ return `${prefix}-${year}-L${String(n).padStart(5,'0')}`;
+}
+function onDocumentTypeChange(){
+ const selected=getDocumentDrafts().find(d=>d.id===currentDocDraftId);
+ if(selected&&selected.type!==$('docType').value){
+  currentDocDraftId=null; $('docNumber').value='';
+ }
+ const bl=$('docType').value==='Bon de livraison';
+ $('docDriverFields').classList.toggle('hidden',!bl);
+ // Never reuse a FAC number after switching draft type.
+ if(!currentDocDraftId)$('docNumber').value='';
+}
+function resetDocumentForNew(){
+ currentDocDraftId=null;
+ ['docNumber','docMovementId','docMovementKind','docClient','docAddress','docEmail','docProduct','docPrice','docDriver','docDriverCin','docVehicle','docDeliveryDate'].forEach(id=>$(id).value='');
+ $('docQty').value='1'; $('docPreview').classList.add('hidden');
+ onDocumentTypeChange();
+}
+function convertMovementToDocument(id,type){
+ if(!admin)return;
+ const m=movements.find(x=>Number(x.id)===Number(id));
+ if(!m||!['sale','purchase'].includes(m.movement_type))return msg('Vente ou achat introuvable.',true);
+ const p=products.find(x=>String(x.id)===String(m.product_id));
+ const draft=getDocumentDrafts().find(d=>String(d.sourceMovementId)===String(id)&&d.type===type);
+ tab('documents');
+ if(draft){fillDocumentDraft(draft);msg('Brouillon existant chargé : le numéro est conservé.');return;}
+ resetDocumentForNew();
+ $('docType').value=type;
+ $('docMovementId').value=String(id);
+ $('docMovementKind').value=m.movement_type;
+ $('docNumber').value=documentNumber(type,id,m.created_at);
+ $('docProduct').value=p?.name||'Produit #'+m.product_id;
+ $('docQty').value=String(Number(m.quantity));
+ $('docPrice').value=String(Number(m.unit_price));
+ if(type==='Bon de livraison')$('docDeliveryDate').value=new Date().toISOString().slice(0,10);
+ onDocumentTypeChange();
+ $('docClient').focus();
+ msg(m.movement_type==='purchase'?'Achat chargé. Vérifiez les mentions du fournisseur : ce brouillon ne constitue pas une facture émise par le fournisseur.':'Vente chargée. Complétez le client, puis préparez le brouillon. Le stock ne change pas.');
+}
+function docDetails(){
+ const type=$('docType').value;
+ let number=$('docNumber').value.trim();
+ const client=$('docClient').value.trim();
+ const item=$('docProduct').value.trim();
+ const qty=Number($('docQty').value);
+ const price=Number($('docPrice').value);
+ if(!client||!item||!Number.isFinite(qty)||qty<=0||$('docPrice').value===''||!Number.isFinite(price)||price<0){
+   throw Error('Complétez le client, le produit, la quantité et le prix.');
+ }
+ const driver=$('docDriver').value.trim(),cin=$('docDriverCin').value.trim(),vehicle=$('docVehicle').value.trim();
+ const deliveryDate=$('docDeliveryDate').value;
+ if(type==='Bon de livraison'&&(!driver||!cin||!vehicle||!deliveryDate))throw Error('Complétez le chauffeur, sa CIN, le véhicule et la date de livraison.');
+ if(type==='Bon de livraison'&&!/^\d{8}$/.test(cin))throw Error('Le N° CIN du chauffeur doit comporter 8 chiffres.');
+ const sourceMovementId=$('docMovementId').value||null,sourceKind=$('docMovementKind').value||'';
+ if(!number){number=documentNumber(type,sourceMovementId);$('docNumber').value=number;}
+ const ttc=Math.round(qty*price*1000)/1000;
+ // Estimated 19% display remains from the original app; not a validated tax invoice.
+ const hasVat=['Facture','Bon de livraison'].includes(type)&&sourceKind!=='purchase';
+ const ht=hasVat?Math.round(ttc/1.19*1000)/1000:ttc;
+ const vat=hasVat?Math.round((ttc-ht)*1000)/1000:0;
+ return {type,number,client,address:$('docAddress').value.trim(),email:$('docEmail').value.trim(),item,qty,price,ttc,ht,vat,hasVat,driver,cin,vehicle,deliveryDate,sourceMovementId,sourceKind};
+}
+
+function docHtml(d){
+
+ const date=d.date||new Date().toLocaleDateString('fr-TN');
+
+ return `<h2>STE ABDELLI BUSINESS</h2>
+
+ <p>MEDENINE — TUNISIE</p>
+
+<p>Matricule fiscal : 1735982/Q/M/000</p>
+ <h2>${safe(d.type)} — BROUILLON</h2>
+
+ <p>N° ${safe(d.number)} — ${safe(date)}</p>
+ ${d.sourceMovementId?`<p class="small">Origine : ${safe(d.sourceKind==='purchase'?'Achat':'Vente')} n° ${safe(d.sourceMovementId)} — sans nouveau mouvement de stock.</p>`:''}
+ ${d.sourceKind==='purchase'?'<p class="notice">Copie de travail d’un achat : ne constitue pas une facture émise par le fournisseur.</p>':''}
+
+ <p><b>Client :</b> ${safe(d.client)}</p>
+
+ <p>${safe(d.address||'')}</p>
+
+ <hr>
+
+ <p><b>Produit :</b> ${safe(d.item)}</p>
+
+ <p>Quantité : ${safe(d.qty)}</p>
+ ${d.type==='Bon de livraison'?`<p><b>Chauffeur :</b> ${safe(d.driver||'')}</p><p><b>N° CIN :</b> ${safe(d.cin||'')}</p><p><b>Véhicule :</b> ${safe(d.vehicle||'')}</p><p><b>Date de livraison :</b> ${safe(d.deliveryDate||'')}</p>`:''}
+
+ <p>Prix unitaire TTC : ${money(d.price)}</p>
+
+ <hr>
+
+ ${d.hasVat?`<p>Total HT : ${money(d.ht)}</p>
+
+ <p>TVA 19% : ${money(d.vat)}</p>`:''}
+
+ <h3>Total TTC : ${money(d.ttc)}</h3>
+
+ <p><small>Document provisoire — informations fiscales à vérifier.</small></p>`;
+
+}
+
+function previewDocument(){
+
+ if(!admin)return;
+
+ try{
+
+   const d=docDetails();
+
+   saveDocumentDraft(d);
+   const el=$('docPreview');
+
+   el.classList.remove('hidden');
+
+   el.innerHTML=docHtml(d)+
+
+   `<button class="blue full" onclick="printDocument()">🖨️ Imprimer A4 / PDF</button>
+     <button class="green full" onclick="shareDocument()">📲 Envoyer WhatsApp (texte)</button>
+     <button class="blue full" onclick="shareDocumentPDF()">📎 Partager le PDF (WhatsApp / Fichiers)</button>
+
+    <button class="gray full" onclick="emailDocument()">📧 Envoyer par e-mail</button>
+    <button class="gray full" onclick="editCurrentDocument()">✏️ Corriger</button>
+    <button class="red full" onclick="deleteCurrentDocument()">🗑️ Supprimer ce brouillon</button>`;
+
+   el.scrollIntoView({behavior:'smooth'});
+
+ }catch(e){msg(errorText(e),true)}
+
+}
+
+function printDocument(){
+
+ if(!admin)return;
+
+ const w=window.open('','_blank');
+
+ if(!w)return msg('Autorisez les fenêtres pop-up.',true);
+
+ w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Document</title></head><body style="font:16px Arial;padding:24px">'+$('docPreview').innerHTML.split('<button')[0]+'</body></html>');
+
+ w.document.close();
+
+ w.focus();
+
+ w.print();
+
+}
+
+function emailDocument(){
+
+ if(!admin)return;
+
+ try{
+
+   const d=docDetails();
+
+   const email=$('docEmail').value.trim();
+
+   const subject=d.type+' '+d.number;
+
+   const body='Bonjour,\n\n'+subject+
+
+    '\nTotal TTC : '+money(d.ttc)+
+
+    '\n\nVeuillez trouver le document en pièce jointe.';
+
+   window.location.href='mailto:'+encodeURIComponent(email)+
+
+    '?subject='+encodeURIComponent(subject)+
+
+    '&body='+encodeURIComponent(body);
+
+ }catch(e){msg(errorText(e),true)}
+
+}
+ 
+
+// Documents are drafts stored locally; these actions never alter Supabase transactions.
+const DOC_DRAFT_KEY='mon_scanner_document_drafts_v1';
+let currentDocDraftId=null;
+function getDocumentDrafts(){try{const a=JSON.parse(localStorage.getItem(DOC_DRAFT_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+function storeDocumentDrafts(a){try{localStorage.setItem(DOC_DRAFT_KEY,JSON.stringify(a));return true}catch(e){msg('Stockage local indisponible. Brouillon non sauvegardé.',true);return false}}
+function saveDocumentDraft(d){
+ const list=getDocumentDrafts(),id=currentDocDraftId||('doc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
+ const draft={...d,id,date:new Date().toLocaleDateString('fr-TN')};
+ const idx=list.findIndex(x=>x.id===id);
+ if(idx<0)list.unshift(draft);else list[idx]=draft;
+ if(storeDocumentDrafts(list)){currentDocDraftId=id;renderDocumentDrafts()}
+}
+function fillDocumentDraft(d){
+ const ids={docType:d.type,docNumber:d.number,docClient:d.client,docAddress:d.address||'',docEmail:d.email||'',docProduct:d.item,docQty:d.qty,docPrice:d.price,docDriver:d.driver||'',docDriverCin:d.cin||'',docVehicle:d.vehicle||'',docDeliveryDate:d.deliveryDate||'',docMovementId:d.sourceMovementId||'',docMovementKind:d.sourceKind||''};
+ Object.entries(ids).forEach(([id,value])=>$(id).value=value);
+ currentDocDraftId=d.id;
+ onDocumentTypeChange();
+ $('docPreview').classList.add('hidden');
+ $('docType').scrollIntoView({behavior:'smooth'});
+}
+function editCurrentDocument(){const d=getDocumentDrafts().find(x=>x.id===currentDocDraftId);if(d)fillDocumentDraft(d);else msg('Brouillon introuvable.',true)}
+function deleteCurrentDocument(){if(currentDocDraftId)deleteDocumentDraft(currentDocDraftId)}
+function editDocumentDraft(id){const d=getDocumentDrafts().find(x=>x.id===id);if(d)fillDocumentDraft(d)}
+function deleteDocumentDraft(id){
+ if(!confirm('Supprimer ce brouillon local ? Cette action ne touche pas aux ventes, achats ou stock.'))return;
+ const list=getDocumentDrafts().filter(x=>x.id!==id);
+ if(!storeDocumentDrafts(list))return;
+ if(currentDocDraftId===id){currentDocDraftId=null;$('docPreview').classList.add('hidden')}
+ renderDocumentDrafts();msg('Brouillon local supprimé.');
+}
+function renderDocumentDrafts(){
+ const el=$('docDraftList');if(!el)return;
+ const list=getDocumentDrafts();
+ el.innerHTML=list.length?list.map(d=>`<div class="product"><b>${safe(d.type)} — ${safe(d.number)}</b><div class="small">Client : ${safe(d.client)} • ${safe(d.date||'')}</div><div class="actionBar"><button class="gray" onclick="editDocumentDraft('${d.id}')">✏️ Corriger</button><button class="red" onclick="deleteDocumentDraft('${d.id}')">🗑️ Supprimer</button></div></div>`).join(''):'<p class="small">Aucun brouillon enregistré sur cet appareil.</p>';
+}
+renderDocumentDrafts();
+
+// BON DE COMMANDE CLIENT
+
+const bcNav = document.createElement('button');
+
+bcNav.dataset.tab = 'commande';
+
+bcNav.textContent = '📋 Commandes clients';
+
+bcNav.onclick = () => tab('commande');
+
+$('nav').appendChild(bcNav);
+
+const bcPage = document.createElement('section');
+
+bcPage.id = 'commande';
+
+bcPage.className = 'page hidden';
+
+bcPage.innerHTML = `
+
+<div class="card">
+
+  <h2>📋 Bon de commande client</h2>
+
+  <p class="notice">La quantité sera réservée jusqu'à confirmation ou annulation.</p>
+
+  <h3>Nouveau client</h3>
+
+  <label>Nom du client *</label>
+
+  <input id="bcName">
+
+  <label>Téléphone *</label>
+
+  <input id="bcPhone" type="tel">
+
+  <label>Adresse de livraison *</label>
+
+  <input id="bcNewAddress">
+
+  <button class="blue full" onclick="bcAddClient()">Ajouter le client</button>
+
+  <h3 style="margin-top:20px">Nouvelle commande</h3>
+
+  <label>Client *</label>
+
+  <select id="bcClient"></select>
+
+
+<button class="gray full" onclick="bcDeleteClient()">
+
+  🗑️ Supprimer client
+
+</button>
+  <label>Adresse de livraison *</label>
+
+  <input id="bcAddress">
+
+  <label>Date de livraison *</label>
+
+  <input id="bcDate" type="date">
+
+  <label>Produit *</label>
+
+  <select id="bcProduct"></select>
+
+
+
+<label>Code-barres du produit</label>
+
+<input id="bcBarcode"
+
+       placeholder="Scanner ou saisir le code-barres"
+
+       oninput="bcFindBarcode()">
+
+<button class="blue" onclick="bcScanBarcode()">
+
+  📷 Scanner le code-barres
+
+</button>
+  <label>Quantité *</label>
+
+  <input id="bcQty" type="number" min="1" step="1" value="1">
+
+  <button class="green full" onclick="bcCreate()">Réserver et créer le bon</button>
+
+</div>
+<div class="card">
+
+  <h2>📦 Commande sur demande</h2>
+
+  <p>Produit pas encore disponible en stock</p>
+
+  <label>Nom du client *</label>
+
+  <input id="spName">
+
+  <label>Téléphone *</label>
+
+  <input id="spPhone" type="tel">
+
+  <label>Adresse de livraison</label>
+
+  <input id="spAddress">
+
+  <label>Description du produit *</label>
+
+  <input id="spProduct">
+
+  <label>Quantité *</label>
+
+  <input id="spQty" type="number" min="1" value="1">
+  <label>Unité *</label>
+
+<select id="spUnit">
+
+  <option value="piece">Pièce</option>
+
+  <option value="meter">Mètre</option>
+
+</select>
+
+  <label>Prix total (TND) *</label>
+
+  <input id="spTotal" type="number" min="0" step="0.001">
+
+  <label>Avance reçue (TND) *</label>
+
+  <input id="spAdvance" type="number" min="0" step="0.001">
+
+  <button class="green full" onclick="spCreate()">
+
+    Enregistrer la commande et l'avance
+
+  </button>
+
+</div>
+<div class="card">
+
+  <h2>📂 Dossiers clients et commandes</h2>
+
+  <button class="gray full" onclick="bcLoad()">Actualiser les commandes</button>
+
+  <div id="bcList"></div>
+
+</div>`;
+
+$('app').appendChild(bcPage);
+
+let bcCustomers = [];
+
+let bcOrders = [];
+
+async function bcLoad() {
+
+  try {
+
+    const cr = await sb.from('customers')
+
+      .select('id,customer_code,name,phone,delivery_address')
+
+      .order('id');
+
+    if (cr.error) throw cr.error;
+
+    bcCustomers = cr.data || [];
+
+    $('bcClient').innerHTML = bcCustomers.map(c =>
+
+      `<option value="${c.id}">${safe(c.customer_code)} — ${safe(c.name)}</option>`
+
+    ).join('');
+
+    $('bcProduct').innerHTML = products.map(p =>
+
+      `<option value="${p.id}">${safe(p.name)} — ${money(finalPrice(p))}</option>`
+
+    ).join('');
+
+    const or = await sb.from('customer_orders')
+
+      .select('id,order_number,customer_id,delivery_date,delivery_address,status,total_ttc,amount_paid,remaining_ttc')
+
+      .order('id', {ascending:false});
+
+    if (or.error) throw or.error;
+
+    bcOrders = or.data || [];
+
+    $('bcList').innerHTML = bcOrders.map(o => {
+
+      const c = bcCustomers.find(x => x.id === o.customer_id);
+
+      const pending = o.status === 'pending';
+
+      return `<div class="product">
+
+        <b>${safe(o.order_number || 'BC-'+o.id)}</b>
+
+        <div>Client : ${safe(c?.name || '')}</div>
+
+        <div>Code client : ${safe(c?.customer_code || '')}</div>
+
+        <div>Téléphone : ${safe(c?.phone || '')}</div>
+
+        <div>Livraison : ${safe(o.delivery_date)}</div>
+
+        <div>Adresse : ${safe(o.delivery_address)}</div>
+
+        <div>État : <b>${safe(o.status)}</b></div>
+
+        <div>Total TTC : ${money(o.total_ttc)}</div>
+
+        <div>Payé : ${money(o.amount_paid)}</div>
+
+        <div>Reste : ${money(o.remaining_ttc)}</div>
+
+        <div class="actionBar">
+        <button class="blue" onclick="bcPrint(${o.id})">🖨️ Imprimer A4</button>
+        <button class="green" onclick="shareOrder(${o.id})">📲 WhatsApp</button>
+        ${pending?`<button class="gray" onclick="correctOrderDetails(${o.id})">✏️ Corriger</button>
+        <button class="red" onclick="bcDecision(${o.id},false)">🗑️ Annuler</button>`:''}
+        </div>
+
+        ${pending ? `
+
+          <button class="green" onclick="bcDecision(${o.id},true)">Confirmé</button>
+
+          <button class="red" onclick="bcDecision(${o.id},false)">Non confirmé</button>
+
+          <button class="gray" onclick="bcPayment(${o.id})">💰 Paiement</button>
+
+        ` : ''}
+
+      </div>`;
+
+    }).join('') || '<p>Aucune commande.</p>';
+
+    
+
+    } catch(e) {
+
+    msg('Commandes : ' + errorText(e), true);
+
+  }
+
+}
+
+  
+async function bcDeleteClient() {
+
+  const id = Number($('bcClient').value);
+
+  if (!id) return alert('Choisissez un client.');
+
+  const client = bcCustomers.find(c => Number(c.id) === id);
+
+  if (!client) return alert('Client introuvable.');
+
+  const check = await sb.from('customer_orders')
+
+    .select('id')
+
+    .eq('customer_id', id)
+
+    .limit(1);
+
+  if (check.error) return alert(errorText(check.error));
+
+  if (check.data.length) {
+
+    return alert('Suppression impossible : ce client a des commandes.');
+
+  }
+
+  if (!confirm('Supprimer définitivement ' + client.name + ' ?')) return;
+
+  const r = await sb.from('customers').delete().eq('id', id);
+
+  if (r.error) return alert(errorText(r.error));
+
+  alert('Client supprimé.');
+
+  await bcLoad();
+
+}
+  
+
+
+
+async function bcAddClient() {
+
+  const name = $('bcName').value.trim();
+
+  const phone = $('bcPhone').value.trim();
+
+  const address = $('bcNewAddress').value.trim();
+
+  if (!name || !phone || !address)
+
+    return msg('Nom, téléphone et adresse obligatoires.', true);
+
+  const r = await sb.from('customers').insert({
+
+    name, phone, delivery_address: address
+
+  });
+
+  if (r.error) return msg(errorText(r.error), true);
+
+  $('bcName').value = '';
+
+  $('bcPhone').value = '';
+
+  $('bcNewAddress').value = '';
+
+  await bcLoad();
+
+  msg('Client enregistré.');
+
+}
+
+async function bcCreate() {
+
+  if (busy) return;
+
+  const customerId = Number($('bcClient').value);
+
+  const productId = Number($('bcProduct').value);
+
+  const quantity = Number($('bcQty').value);
+
+  const address = $('bcAddress').value.trim();
+
+  const date = $('bcDate').value;
+
+  if (!customerId || !productId || !address || !date ||
+
+      !Number.isSafeInteger(quantity) || quantity < 1)
+
+    return msg('Complétez les informations obligatoires.', true);
+
+  if (!confirm('Créer la commande et réserver '+quantity+' pièce(s) ?'))
+
+    return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('create_customer_order', {
+
+      p_customer_id: customerId,
+
+      p_delivery_address: address,
+
+      p_delivery_date: date,
+
+      p_items: [{product_id:productId,quantity}]
+
+    });
+
+    if (r.error) throw r.error;
+
+    await bcLoad();
+
+    msg('Bon de commande créé. Stock réservé.');
+
+  } catch(e) {
+
+    msg('Commande impossible : '+errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+async function bcDecision(id, confirmed) {
+
+  if (busy) return;
+
+  if (!confirm(confirmed
+
+      ? 'Confirmer la commande et créer Facture + Bon de livraison ?'
+
+      : 'Annuler la commande et libérer le stock réservé ?'))
+
+    return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc(
+
+      confirmed ? 'confirm_customer_order' : 'cancel_customer_order',
+
+      {p_order_id:id}
+
+    );
+
+    if (r.error) throw r.error;
+
+    await refresh();
+
+    await bcLoad();
+
+    msg(confirmed
+
+      ? 'Commande confirmée. Facture et livraison créées.'
+
+      : 'Commande annulée. Réservation libérée.');
+
+  } catch(e) {
+
+    msg('Opération impossible : '+errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+async function bcPayment(id) {
+
+  if (busy) return;
+
+  const amount = prompt('Montant reçu en TND :');
+
+  if (amount === null) return;
+
+  const value = Number(amount.replace(',', '.'));
+
+  if (!Number.isFinite(value) || value <= 0)
+
+    return msg('Montant invalide.', true);
+
+  if (!confirm('Enregistrer '+money(value)+' ?')) return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('record_customer_payment', {
+
+      p_order_id:id,
+
+      p_amount:value,
+
+      p_method:'Espèces'
+
+    });
+
+    if (r.error) throw r.error;
+
+    await bcLoad();
+
+    msg('Paiement enregistré.');
+
+  } catch(e) {
+
+    msg('Paiement impossible : '+errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+async function bcPrint(id) {
+
+  const o = bcOrders.find(x => x.id === id);
+
+  if (!o) return;
+
+  const c = bcCustomers.find(x => x.id === o.customer_id);
+
+  const r = await sb.from('customer_order_items')
+
+    .select('product_id,quantity,unit_price_ttc')
+
+    .eq('order_id',id);
+
+  if (r.error) return msg(errorText(r.error),true);
+
+  const lines = (r.data || []).map(i => {
+
+    const p = products.find(x => x.id === i.product_id);
+
+    return `<p>${safe(p?.name || 'Produit #'+i.product_id)}
+
+      — ${i.quantity} × ${money(i.unit_price_ttc)}</p>`;
+
+  }).join('');
+
+  const w = window.open('','_blank');
+
+  if (!w) return msg('Autorisez les fenêtres pop-up.',true);
+
+  w.document.write(`<!doctype html><html><head>
+
+    <meta charset="utf-8">
+
+    <title>Bon de commande</title></head>
+
+    <body style="font:16px Arial;padding:24px">
+
+    <h2>STE ABDELLI BUSINESS</h2>
+
+    <p>Matricule fiscal : 1735982/Q/M/000</p>
+
+    <h2>BON DE COMMANDE CLIENT</h2>
+
+    <p>N° ${safe(o.order_number || '')}</p>
+
+    <p>Client : ${safe(c?.name || '')}</p>
+
+    <p>Code client : ${safe(c?.customer_code || '')}</p>
+
+    <p>Téléphone : ${safe(c?.phone || '')}</p>
+
+    <p>Adresse : ${safe(o.delivery_address)}</p>
+
+    <p>Date de livraison : ${safe(o.delivery_date)}</p>
+
+    <hr>${lines}<hr>
+
+    <p>Total TTC : ${money(o.total_ttc)}</p>
+
+    <p>Payé : ${money(o.amount_paid)}</p>
+
+    <p>Reste : ${money(o.remaining_ttc)}</p>
+
+    <p>État : ${safe(o.status)}</p>
+
+    <button onclick="window.print()">🖨️ Imprimer / PDF</button>
+
+    </body></html>`);
+
+  w.document.close();
+
+}
+
+const bcOldTab = tab;
+
+tab = function(id) {
+
+  bcOldTab(id);
+
+  if (id === 'commande') bcLoad();
+
+};
+ function bcFindBarcode() {
+
+  const code = $('bcBarcode').value.trim();
+
+  if (!code) return;
+
+  const p = products.find(x =>
+
+    String(x.barcode).trim() === code
+
+  );
+
+  if (p) {
+
+    $('bcProduct').value = String(p.id);
+
+  }
+
+}
+ function bcScanBarcode() {
+
+  scan('bcBarcode');
+
+}
+ 
+
+// ACHATS AVEC / SANS FACTURE
+
+const achatPrice = $('aPrice');
+
+achatPrice.insertAdjacentHTML('afterend', `
+
+<label>Type d'achat</label>
+
+<select id="purchaseType" onchange="togglePurchaseInvoice()">
+
+  <option value="avec_facture">Avec facture</option>
+
+  <option value="sans_facture">Sans facture</option>
+
+</select>
+
+<label>Nom du fournisseur *</label>
+
+<input id="purchaseSupplier" placeholder="Fournisseur">
+
+<div id="purchaseInvoiceBox">
+
+  <label>Numéro de facture *</label>
+
+  <input id="purchaseInvoice" placeholder="N° facture">
+
+</div>
+
+`);
+
+function togglePurchaseInvoice() {
+
+  $('purchaseInvoiceBox').classList.toggle(
+
+    'hidden',
+
+    $('purchaseType').value === 'sans_facture'
+
+  );
+
+}
+
+let purchaseRequestId = null;
+
+purchase = async function() {
+
+  if (!admin || busy) return;
+
+  const p = product($('aCode').value);
+
+  const q = qty('aQty');
+
+  const cost = Number($('aPrice').value);
+
+  const type = $('purchaseType').value;
+
+  const supplier = $('purchaseSupplier').value.trim();
+
+  const invoice = $('purchaseInvoice').value.trim();
+
+  if (!p || !q || $('aPrice').value === '' ||
+
+      !Number.isFinite(cost) || cost < 0 ||
+
+      !supplier ||
+
+      (type === 'avec_facture' && !invoice)) {
+
+    return msg('Complétez les informations de l’achat.', true);
+
+  }
+
+  if (!purchaseRequestId) {
+
+    purchaseRequestId = crypto.randomUUID();
+
+  }
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('save_purchase_record', {
+
+      p_type: type,
+
+      p_supplier: supplier,
+
+      p_invoice: type === 'avec_facture' ? invoice : null,
+
+      p_product_id: p.id,
+
+      p_quantity: q,
+
+      p_unit_cost_ttc: cost,
+
+      p_request_id: purchaseRequestId,
+
+p_purchase_unit: $('purchaseUnit').value
+
+    });
+
+    if (r.error) throw r.error;
+
+    purchaseRequestId = null;
+
+    $('aCode').value = '';
+
+    $('aQty').value = '1';
+
+    $('aPrice').value = '';
+
+    $('aFound').textContent = '';
+
+    $('purchaseSupplier').value = '';
+
+    $('purchaseInvoice').value = '';
+
+    await refresh();
+
+    msg('Achat enregistré. Stock augmenté.');
+
+  } catch(e) {
+
+    msg('Achat impossible : ' + errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+};
+  async function spCreate() {
+
+  if (busy) return;
+
+  const name = $('spName').value.trim();
+
+  const phone = $('spPhone').value.trim();
+
+  const address = $('spAddress').value.trim();
+
+  const productName = $('spProduct').value.trim();
+
+  const quantity = Number($('spQty').value);
+
+  const total = Number($('spTotal').value);
+
+  const advance = Number($('spAdvance').value);
+
+  if (!name || !phone || !productName ||
+
+      !Number.isSafeInteger(quantity) || quantity <= 0 ||
+
+      $('spTotal').value === '' ||
+
+      !Number.isFinite(total) || total <= 0 ||
+
+      $('spAdvance').value === '' ||
+
+      !Number.isFinite(advance) ||
+
+      advance <= 0 || advance > total) {
+
+    return msg('Vérifiez les informations et l’avance.', true);
+
+  }
+
+  if (!confirm('Confirmer la réception de l’avance : ' +
+
+               advance.toFixed(3) + ' TND ?')) return;
+
+  busy = true;
+
+  try {
+
+    const r = await sb.rpc('create_special_order', {
+
+      p_customer_name: name,
+
+      p_customer_phone: phone,
+
+      p_delivery_address: address,
+
+      p_product_description: productName,
+
+      p_quantity: quantity,
+
+      p_total_price: total,
+
+      p_advance: advance,
+
+p_unit: $('spUnit').value
+
+    });
+
+    if (r.error) throw r.error;
+
+    $('spName').value = '';
+
+    $('spPhone').value = '';
+
+    $('spAddress').value = '';
+
+    $('spProduct').value = '';
+
+    $('spQty').value = '1';
+
+    $('spTotal').value = '';
+
+    $('spAdvance').value = '';
+
+    msg('Commande et avance enregistrées. N° ' + r.data);
+
+  } catch (e) {
+
+    msg('Erreur : ' + errorText(e), true);
+
+  } finally {
+
+    busy = false;
+
+  }
+
+}
+
+
+async function loadPrimes() {
+
+  if (!admin) return;
+
+  const el = $('primeList');
+
+  if (!el) return;
+
+  el.textContent = 'Chargement...';
+
+  try {
+
+    const r = await sb.rpc('get_employee_primes');
+
+    if (r.error) throw r.error;
+
+    el.innerHTML = (r.data || []).map(p => `
+
+      <div class="product">
+
+        <b>${safe(p.first_name)} ${safe(p.last_name)}</b>
+
+        <div>Mètres vendus : ${Number(p.metres_vendus || 0)}</div>
+
+        <div>Prime : ${money(p.prime_tnd || 0)}</div>
+
+      </div>
+
+    `).join('') || '<p>Aucune employée.</p>';
+
+  } catch (e) {
+
+    el.textContent = 'Erreur : ' + errorText(e);
+
+  }
+
+}
+
+// --- Actions dans les produits, le stock, les finances, les commandes et les documents (version test) ---
+function actionRecord(table,id){
+ const list=table==='business_expenses'?expenses:payroll;
+ return list.find(x=>Number(x.id)===Number(id));
+}
+function financeButtons(table,id){
+ const args=`'${table}',${Number(id)}`;
+ return `<div class="actionBar">
+  <button class="gray" onclick="correctFinance(${args})">✏️ Corriger</button>
+  <button class="red" onclick="deleteFinance(${args})">🗑️ Supprimer</button>
+  <button class="green" onclick="shareFinance(${args})">📲 WhatsApp</button>
+  <button class="blue" onclick="printFinance(${args})">🖨️ Imprimer A4</button></div>`;
+}
+async function correctFinance(table,id){
+ if(!admin||busy||!['business_expenses','salary_payments'].includes(table))return;
+ const x=actionRecord(table,id);if(!x)return msg('Enregistrement introuvable.',true);
+ const label=prompt(table==='business_expenses'?'Libellé de la dépense':'Nom de l’employé',String(table==='business_expenses'?x.label:x.employee_name));
+ if(label===null)return;
+ const price=prompt('Montant TND',String(x.amount));if(price===null)return;
+ const date=prompt('Date (AAAA-MM-JJ)',String(table==='business_expenses'?x.expense_date:x.paid_on));if(date===null)return;
+ const amount=Number(price.replace(',','.'));
+ if(!label.trim()||!Number.isFinite(amount)||amount<=0||!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(new Date(date+'T12:00:00').getTime()))return msg('Données invalides.',true);
+ if(!confirm('Enregistrer la correction de '+label.trim()+' : '+money(amount)+' ?'))return;
+ const payload=table==='business_expenses'?{label:label.trim(),amount,expense_date:date}:{employee_name:label.trim(),amount,paid_on:date};
+ busy=true;try{
+  const r=await sb.from(table).update(payload).eq('id',id).select('id');if(r.error)throw r.error;
+  if(r.data?.length!==1)throw Error('Correction non autorisée ou non sauvegardée.');
+  await loadFinance();msg('Correction enregistrée.');
+ }catch(e){msg('Correction impossible : '+errorText(e),true)}finally{busy=false}
+}
+// Supabase row permissions must allow the operation; verify the changed row.
+deleteFinance=async function(table,id){
+ if(!admin||busy||!['business_expenses','salary_payments'].includes(table))return;
+ const x=actionRecord(table,id);if(!x)return msg('Enregistrement introuvable.',true);
+ if(!confirm('Supprimer cet enregistrement définitivement ? Cette opération ne peut pas être annulée.'))return;
+ busy=true;try{
+  const r=await sb.from(table).delete().eq('id',id).select('id');if(r.error)throw r.error;
+  if(r.data?.length!==1)throw Error('Suppression non autorisée ou non effectuée.');
+  await loadFinance();msg('Enregistrement supprimé.');
+ }catch(e){msg('Suppression impossible : '+errorText(e),true)}finally{busy=false}
+};
+function whatsappText(title,lines){
+ const text=['ABDELLI BUSINESS',title,...lines].join('\n');
+ window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');
+}
+function printableA4(title,lines){
+ const w=window.open('','_blank');if(!w)return msg('Autorisez les fenêtres pop-up pour imprimer.',true);
+ const body=lines.map(([label,value])=>`<tr><th>${safe(label)}</th><td>${safe(value)}</td></tr>`).join('');
+ w.document.open();w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safe(title)}</title>
+ <style>@page{size:A4;margin:18mm}body{font:14px Arial,sans-serif;color:#183047}header{border-bottom:2px solid #123d68;padding-bottom:16px;margin-bottom:25px}h1{font-size:24px}h2{margin:20px 0}table{border-collapse:collapse;width:100%}th,td{padding:12px;border-bottom:1px solid #d8e0e8;text-align:left}th{width:35%;background:#f3f6f9}.tools{margin-top:30px}@media print{.tools{display:none}}</style></head><body><header><h1>ABDELLI BUSINESS</h1><p>MEDENINE — TUNISIE</p></header><h2>${safe(title)}</h2><table>${body}</table>
+ <div class="tools"><button onclick="window.print()">🖨️ Imprimer / Enregistrer en PDF</button></div></body></html>`);w.document.close();
+}
+function getMovementInfo(id){
+ const m=movements.find(x=>Number(x.id)===Number(id));if(!m)return null;
+ const p=products.find(x=>x.id===m.product_id),type=m.movement_type==='sale'?'Vente':m.movement_type==='purchase'?'Achat':String(m.movement_type);
+ return {type,lines:[['N° opération',String(m.id)],['Date',new Date(m.created_at).toLocaleString('fr-TN')],['Produit',p?.name||'Produit #'+m.product_id],['Quantité',String(m.quantity)],['Prix unitaire',money(m.unit_price)],['Total',money(Number(m.quantity)*Number(m.unit_price))]]};
+}
+function movementChangeNotice(id,action){
+ if(!admin)return;
+ const x=getMovementInfo(id);if(!x)return;
+ msg('Pour '+action+' cette '+x.type.toLowerCase()+', une fonction transactionnelle sécurisée doit être ajoutée à Supabase (stock, mouvements et paiements). Aucune donnée n’a été modifiée.',true);
+}
+function shareMovement(id){const x=getMovementInfo(id);if(x)whatsappText(x.type,x.lines.map(a=>a.join(' : ')))}
+function printMovement(id){const x=getMovementInfo(id);if(x)printableA4(x.type+' — justificatif',x.lines)}
+function getFinanceInfo(table,id){
+ const x=actionRecord(table,id);if(!x)return null;
+ const isE=table==='business_expenses';return {type:isE?'Dépense':'Salaire',lines:[['N°',String(x.id)],['Libellé',String(isE?x.label:x.employee_name)],['Date',String(isE?x.expense_date:x.paid_on)],['Montant',money(x.amount)]]};
+}
+function shareFinance(t,id){const x=getFinanceInfo(t,id);if(x)whatsappText(x.type,x.lines.map(a=>a.join(' : ')))}
+function printFinance(t,id){const x=getFinanceInfo(t,id);if(x)printableA4(x.type+' — justificatif',x.lines)}
+function productActionInfo(id){
+ const p=products.find(x=>Number(x.id)===Number(id));if(!p)return null;
+ return [['Produit',String(p.name)],['Code-barres',String(p.barcode)],['Stock actuel',String(p.stock_quantity)],['Prix',money(p.sale_price)],['Remise',String(p.discount_percent)+' %'],['Prix final',money(finalPrice(p))]];
+}
+function shareProduct(id){const info=productActionInfo(id);if(info)whatsappText('Fiche produit',info.map(x=>x.join(' : ')))}
+function printProduct(id){const info=productActionInfo(id);if(info)printableA4('Fiche produit',info)}
+function shareOrder(id){
+ const o=bcOrders.find(x=>Number(x.id)===Number(id));if(!o)return;
+ const c=bcCustomers.find(x=>x.id===o.customer_id);
+ whatsappText('Bon de commande '+(o.order_number||'BC-'+o.id),['Client : '+(c?.name||''),'Livraison : '+(o.delivery_date||''),'Adresse : '+(o.delivery_address||''),'Total : '+money(o.total_ttc),'Payé : '+money(o.amount_paid),'Reste : '+money(o.remaining_ttc),'État : '+o.status]);
+}
+async function correctOrderDetails(id){
+ if(!admin||busy)return;const o=bcOrders.find(x=>Number(x.id)===Number(id));
+ if(!o||o.status!=='pending')return msg('Seule une commande en attente peut être corrigée.',true);
+ const address=prompt('Adresse de livraison',o.delivery_address||'');if(address===null)return;
+ const date=prompt('Date livraison (AAAA-MM-JJ)',o.delivery_date||'');if(date===null)return;
+ if(!address.trim()||!/^\d{4}-\d{2}-\d{2}$/.test(date))return msg('Adresse ou date invalide.',true);
+ if(!confirm('Enregistrer la nouvelle adresse et date de livraison ?'))return;
+ busy=true;try{
+  const r=await sb.from('customer_orders').update({delivery_address:address.trim(),delivery_date:date}).eq('id',id).eq('status','pending').select('id');
+  if(r.error)throw r.error;if(r.data?.length!==1)throw Error('Correction non autorisée.');
+  await bcLoad();msg('Commande corrigée.');
+ }catch(e){msg('Correction impossible : '+errorText(e),true)}finally{busy=false}
+}
+function getDocumentPdfFile(){
+ const d=docDetails();
+ if(!window.jspdf?.jsPDF)throw Error('Module PDF indisponible : vérifiez la connexion Internet. Utilisez Imprimer A4 / PDF.');
+ const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+ let y=19;
+ const add=(value,weight='normal')=>{
+  pdf.setFont('helvetica',weight);pdf.setFontSize(weight==='bold'?13:11);
+  const parts=pdf.splitTextToSize(String(value),174);
+  for(const line of parts){if(y>273){pdf.addPage();y=19}pdf.text(line,18,y);y+=7;}
+ };
+ add('STE ABDELLI BUSINESS','bold');add('MEDENINE - TUNISIE');y+=5;
+ add(d.type+' - BROUILLON','bold');add('Numero : '+d.number);add('Date : '+new Date().toLocaleDateString('fr-TN'));
+ if(d.sourceMovementId)add('Operation : '+(d.sourceKind==='purchase'?'Achat':'Vente')+' #'+d.sourceMovementId);
+ if(d.sourceKind==='purchase')add('Copie de travail - facture fournisseur non emise par cette application');
+ y+=4;add('Client : '+d.client);if(d.address)add('Adresse : '+d.address);
+ add('Produit : '+d.item);add('Quantite : '+d.qty);add('Prix unitaire : '+money(d.price));
+ if(d.type==='Bon de livraison'){
+  y+=3;add('Chauffeur : '+d.driver);add('CIN chauffeur : '+d.cin);add('Vehicule : '+d.vehicle);add('Date livraison : '+d.deliveryDate);
+ }
+ y+=4;if(d.hasVat){add('Total HT estime (TVA 19% a verifier) : '+money(d.ht));add('TVA estimee : '+money(d.vat));}
+ add('Total TTC : '+money(d.ttc),'bold');y+=7;
+ add('DOCUMENT PROVISOIRE - informations fiscales a verifier');
+ const file=new File([pdf.output('blob')],d.number.replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf',{type:'application/pdf'});
+ return {d,file};
+}
+async function shareDocumentPDF(){
+ if(!admin)return;
+ try{
+  const {d,file}=getDocumentPdfFile();
+  if(navigator.canShare?.({files:[file]})&&navigator.share){
+   try{await navigator.share({files:[file],title:d.type+' '+d.number,text:'Document brouillon à vérifier'});return}
+   catch(e){if(e.name==='AbortError')return;}
+  }
+  const blob=URL.createObjectURL(file),a=document.createElement('a');a.href=blob;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(blob),10000);
+  msg('PDF téléchargé. Ouvrez-le dans Fichiers et partagez-le avec WhatsApp.');
+ }catch(e){msg('Partage PDF impossible : '+errorText(e),true)}
+}
+function shareDocument(){
+ try{const d=docDetails();whatsappText(d.type+' '+d.number,['Client : '+d.client,'Produit : '+d.item,'Quantité : '+d.qty,'Prix unitaire : '+money(d.price),'Total TTC : '+money(d.ttc),...(d.type==='Bon de livraison'?['Chauffeur : '+d.driver,'CIN : '+d.cin,'Véhicule : '+d.vehicle,'Livraison : '+d.deliveryDate]:[]),'Brouillon à vérifier']);}
+ catch(e){msg(errorText(e),true)}
+}
+// For plain GitHub Pages, request a fresh document on each online navigation.
+// A previously registered service worker may still control the installed app.
+if('serviceWorker' in navigator){
+ navigator.serviceWorker.getRegistrations().then(regs=>{
+  regs.forEach(r=>r.update().catch(()=>{}));
+ }).catch(()=>{});
+}
+
+</script></body></html>
