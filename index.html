@@ -1902,4 +1902,168 @@ setInterval(()=>{if(!admin)void refreshLiveSellingPrices();},20000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!admin)void refreshLiveSellingPrices();});
 window.addEventListener('focus',()=>{if(!admin)void refreshLiveSellingPrices();});
 
-</script></body></html>
+</script>
+ 
+ <script>
+
+(function () {
+
+  window.movementChangeNotice = async function (id, action) {
+
+    if (!admin) return;
+
+    if (action !== 'corriger') {
+
+      msg('الحذف مازال موش مفعّل حفاظًا على البيانات.', true);
+
+      return;
+
+    }
+
+    const m = movements.find(x => Number(x.id) === Number(id));
+
+    if (!m || m.movement_type !== 'purchase') {
+
+      msg('التصحيح هذا مخصّص للمشتريات فقط.', true);
+
+      return;
+
+    }
+
+    const { data: items, error } = await sb
+
+      .from('purchase_record_items')
+
+      .select('id,purchase_id,quantity,unit_cost,stock_movement_id')
+
+      .eq('stock_movement_id', id);
+
+    if (error || !items || items.length !== 1) {
+
+      msg('تعذّر تحديد الشراء المرتبط بهذه الحركة.', true);
+
+      return;
+
+    }
+
+    const item = items[0];
+
+    const { data: rec, error: recError } = await sb
+
+      .from('purchase_records')
+
+      .select('id,purchase_type,supplier_name,invoice_number')
+
+      .eq('id', item.purchase_id)
+
+      .single();
+
+    if (recError || !rec) {
+
+      msg('تعذّر تحميل بيانات الشراء.', true);
+
+      return;
+
+    }
+
+    const quantity = prompt('الكمية الصحيحة:', item.quantity);
+
+    if (quantity === null) return;
+
+    const price = prompt('سعر الشراء الصحيح:', item.unit_cost);
+
+    if (price === null) return;
+
+    const supplier = prompt('اسم المزوّد:', rec.supplier_name || '');
+
+    if (supplier === null) return;
+
+    const invoice = prompt(
+
+      'رقم الفاتورة (اتركه فارغًا إذا كان الشراء بدون فاتورة):',
+
+      rec.invoice_number || ''
+
+    );
+
+    if (invoice === null) return;
+
+    const reason = prompt('سبب التصحيح (3 أحرف على الأقل):');
+
+    if (reason === null) return;
+
+    const q = Number(quantity);
+
+    const cost = Number(price);
+
+    if (
+
+      !Number.isSafeInteger(q) || q <= 0 ||
+
+      !Number.isFinite(cost) || cost < 0 ||
+
+      !supplier.trim() ||
+
+      reason.trim().length < 3 ||
+
+      (rec.purchase_type === 'avec_facture' && !invoice.trim())
+
+    ) {
+
+      msg('راجع الكمية والسعر والمزوّد والفاتورة وسبب التصحيح.', true);
+
+      return;
+
+    }
+
+    if (!confirm(
+
+      'تأكيد تصحيح الشراء؟\n' +
+
+      'الكمية: ' + item.quantity + ' ← ' + q + '\n' +
+
+      'السعر: ' + item.unit_cost + ' ← ' + cost + '\n' +
+
+      'الستوك سيتغيّر بفارق الكمية.'
+
+    )) return;
+
+    const { error: correctionError } = await sb.rpc(
+
+      'correct_purchase_full',
+
+      {
+
+        p_purchase_id: item.purchase_id,
+
+        p_quantity: q,
+
+        p_unit_cost: cost,
+
+        p_supplier: supplier.trim(),
+
+        p_invoice: invoice.trim(),
+
+        p_reason: reason.trim()
+
+      }
+
+    );
+
+    if (correctionError) {
+
+      msg('فشل التصحيح: ' + correctionError.message, true);
+
+      return;
+
+    }
+
+    msg('✅ تمّ تصحيح الشراء بنجاح.');
+
+    await refresh();
+
+  };
+
+})();
+  
+  </script></body></html>
