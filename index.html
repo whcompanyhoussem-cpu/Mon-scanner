@@ -2,9 +2,9 @@
 <html lang="fr"><head><link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Mon Scanner">
-<meta name="application-version" content="2026-11-17-stable">
+<meta name="application-version" content="2026-11-17-clients-cloud-v6">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123d68"><title>Mon Scanner Pro — Gestion</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123d68"><title>Mon Scanner Pro — Gestion</title><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script><style>
 *{box-sizing:border-box}body{margin:0;background:#eef3f8;color:#183047;font:15px Arial,sans-serif}header{background:#123d68;color:#fff;padding:17px;text-align:center}h1{margin:0;font-size:24px}header p{margin:7px 0 0}main{max-width:760px;margin:auto;padding:12px}.card{background:white;border-radius:12px;padding:15px;margin-bottom:12px;box-shadow:0 2px 8px #0001}nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}button{border:0;border-radius:9px;padding:11px;font-weight:bold;font-size:14px;cursor:pointer}nav button{background:white;color:#123d68}nav button.active,.blue{background:#123d68;color:white}.green{background:#15804e;color:white}.gray{background:#e8edf2;color:#223a51}.red{background:#bd3939;color:white}.full{width:100%;margin-top:10px}.hidden{display:none!important}h2{font-size:19px;margin:0 0 12px}label{display:block;font-weight:bold;font-size:13px;margin:10px 0 5px}input,select{width:100%;padding:12px;border:1px solid #ccd6df;border-radius:9px;font-size:16px}.row{display:flex;gap:8px}.row input{flex:1;min-width:0}.product{border:1px solid #dbe4ed;border-radius:10px;padding:12px;margin:9px 0}.small{font-size:13px;color:#617285;margin-top:6px}.price{color:#087044;font-weight:bold}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat{background:#eaf2fa;padding:12px;border-radius:10px}.stat b{display:block;font-size:20px;margin-top:6px}.notice{background:#fff4d8;padding:10px;border-radius:8px;font-size:13px;line-height:1.5}.error{background:#ffe4e4;color:#8a1c1c;padding:10px;border-radius:8px;white-space:pre-wrap}.ok{background:#e3f5eb;color:#08633b;padding:10px;border-radius:8px}#reader{width:100%}button:disabled{opacity:.55} .flex{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
  .actionBar{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.actionBar button{flex:1 1 125px;font-size:12px;padding:10px}.actionBar .red{background:#b92f36;color:#fff}.statusnote{font-size:12px;color:#6c5960;margin-top:6px}@media print{nav,.actionBar,button{display:none!important}} </style></head><body><header><h1>📦 Mon Scanner Pro</h1><p>Stock partagé • Achats • Ventes • Finances • Retours</p></header><main>
 <div id="message" class="hidden" role="status"></div>
@@ -22,7 +22,7 @@ type="number" min="0" step=".001"><label>Unité d'achat</label>
   <option value="piece">Pièce</option>
 
 </select><button class="green full" onclick="purchase()">Enregistrer l'achat</button></div></section>
-<section id="vente" class="page hidden"><div class="card"><h2>💰 Nouvelle vente</h2><label>Code-barres</label><div class="row"><input id="vCode" oninput="lookup('v')"><button class="blue" onclick="scan('v')">📷</button></div><div class="small" id="vFound"></div><label>Quantité vendue</label><input id="vQty" type="number" min="1" step="1" value="1"><div id="saleInfo" class="notice" style="margin-top:12px">Scannez un produit pour afficher le prix.</div><button class="green full" onclick="sale()">Valider la vente</button></div></section>
+<section id="vente" class="page hidden"><div class="card"><h2>💰 Nouvelle vente</h2><label>Code-barres</label><div class="row"><input id="vCode" oninput="lookup('v')"><button class="blue" onclick="scan('v')">📷</button></div><div class="small" id="vFound"></div><label>Quantité vendue</label><input id="vQty" type="number" min="1" step="1" value="1"><div id="saleInfo" class="notice" style="margin-top:12px">Scannez un produit pour afficher le prix.</div><label>Client de la vente (facultatif)</label><select id="saleCustomer" onchange="showSaleCustomerInfo()"><option value="">— Vente sans client sélectionné —</option></select><p id="saleCustomerInfo" class="small">Les clients enregistrés dans Bon de commande sont proposés ici. Si vous choisissez un client, ses coordonnées seront associées à cette vente sur cet appareil.</p><button class="gray full" type="button" onclick="loadSaleCustomers()">🔄 Actualiser la liste des clients</button><button class="green full" onclick="sale()">Valider la vente</button></div></section>
 <section id="produits" class="page hidden adminOnly"><div class="card"><h2>🏷️ Fiche produit</h2><input type="hidden" id="oldId"><label>Code-barres</label><div class="row"><input id="pCode"><button class="blue" onclick="scan('p')">📷</button></div><label>Nom du produit</label><input id="pName"><label>Prix de vente (TND)</label><input id="pPrice" type="number" min="0" step=".001"><label>Remise (%)</label><input id="pDiscount" type="number" min="0" max="100" step=".01" value="0"><label>Unité de vente</label>
 
 <select id="saleUnit">
@@ -80,8 +80,8 @@ async function login(){
 }
 async function logout(){await stopScan();await sb.auth.signOut();currentUser=null;profile=null;products=[];movements=[];$('app').classList.add('hidden');$('loginPage').classList.remove('hidden');clearMsg()}
 async function boot(){const {data:{user},error}=await sb.auth.getUser();if(error||!user){$('app').classList.add('hidden');$('loginPage').classList.remove('hidden');return}currentUser=user;const r=await sb.from('staff_profiles').select('full_name,role').eq('user_id',user.id).single();if(r.error||!r.data||!['admin','employee'].includes(r.data.role)){await sb.auth.signOut();throw Error('Compte non autorisé : profil employé ou administrateur introuvable.')}profile=r.data;admin=profile.role==='admin';$('who').textContent=profile.full_name;$('role').textContent=admin?'Administrateur':'Employée';document.querySelectorAll('.adminOnly').forEach(e=>e.classList.toggle('hidden',!admin));$('loginPage').classList.add('hidden');$('app').classList.remove('hidden');tab('stock');await refresh()}
-async function refresh(){clearMsg();try{let r;if(admin){r=await sb.rpc('admin_products')}else{r=await sb.from('employee_products').select('id,barcode,name,sale_price,discount_percent,stock_quantity').order('name')}if(r.error)throw r.error;products=(r.data||[]).filter(p=>!p.archived).sort((a,b)=>a.name.localeCompare(b.name));if(admin){const m=await sb.from('stock_movements').select('id,product_id,movement_type,quantity,unit_price,created_at').order('created_at',{ascending:false}).limit(500);if(m.error)throw m.error;movements=m.data||[]}else movements=[];render()}catch(e){msg('Chargement impossible : '+errorText(e),true)}}
-function tab(id){if(!admin&&['achat','produits','historique','finances','donnees'].includes(id))return;document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));stopScan();render();if(id==='finances')loadFinance();if(id==='retours')loadReturns()}
+async function refresh(){clearMsg();try{let r;if(admin){r=await sb.rpc('admin_products')}else{r=await sb.from('employee_products').select('id,barcode,name,sale_price,discount_percent,stock_quantity').order('name')}if(r.error)throw r.error;products=(r.data||[]).filter(p=>!p.archived).sort((a,b)=>a.name.localeCompare(b.name));if(admin){const m=await sb.from('stock_movements').select('id,product_id,movement_type,quantity,unit_price,created_at').order('created_at',{ascending:false}).limit(500);if(m.error)throw m.error;movements=m.data||[];await loadCloudMovementClients();await syncLocalMovementClients()}else movements=[];render()}catch(e){msg('Chargement impossible : '+errorText(e),true)}}
+function tab(id){if(!admin&&['achat','produits','historique','finances','donnees'].includes(id))return;document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));$(id).classList.remove('hidden');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));stopScan();render();if(id==='finances')loadFinance();if(id==='retours')loadReturns();if(id==='vente')loadSaleCustomers();if(id==='documents')void loadDocumentContacts()}
 function render(){renderStock();if(admin){renderProducts();renderHistory()}}
 function finalPrice(p){return Number(p.sale_price)*(1-Number(p.discount_percent)/100)}
 function product(code){return products.find(p=>p.barcode===String(code||'').trim())}
@@ -98,6 +98,7 @@ function renderHistory(){
   <button class="red" onclick="movementChangeNotice(${Number(m.id)},'supprimer')">🗑️ Supprimer</button>
   <button class="green" onclick="shareMovement(${Number(m.id)})">📲 WhatsApp</button>
   <button class="blue" onclick="printMovement(${Number(m.id)})">🖨️ Imprimer A4</button></div>
+  ${['sale','purchase'].includes(m.movement_type)?`<div class="actionBar"><button class="blue" onclick="convertMovementToDocument(${Number(m.id)},'Facture')">📄 Transformer en facture PDF</button></div>`:''}
   <div class="statusnote">Correction / suppression : contrôle sécurisé côté base de données requis.</div></div>`;
  }).join(''):'<p>Aucune opération.</p>';
 }
@@ -125,7 +126,59 @@ async function deleteProduct(id){
 function lookup(t){const p=product($(t+'Code').value);$(t+'Found').textContent=p?p.name+' | Stock : '+p.stock_quantity:'Produit non trouvé';if(t==='a'&&p)$('aPrice').value=p.purchase_price??'';if(t==='v')$('saleInfo').textContent=p?'Prix final : '+money(finalPrice(p))+' | Stock disponible : '+p.stock_quantity:'Scannez un produit existant.'}
 function qty(id){const n=Number($(id).value);return Number.isSafeInteger(n)&&n>0?n:null}
 async function purchase(){if(!admin||busy)return;const p=product($('aCode').value),q=qty('aQty'),cost=Number($('aPrice').value);if(!p||!q||$('aPrice').value===''||!Number.isFinite(cost)||cost<0)return msg('Vérifiez le produit, la quantité et le coût.',true);busy=true;try{const r=await sb.rpc('record_purchase',{p_product_id:p.id,p_quantity:q,p_unit_cost:cost});if(r.error)throw r.error;$('aCode').value='';$('aQty').value='1';$('aPrice').value='';$('aFound').textContent='';await refresh();msg('Achat enregistré. Stock augmenté.')}catch(e){msg('Achat refusé : '+errorText(e),true)}finally{busy=false}}
-async function sale(){if(busy)return;const p=product($('vCode').value),q=qty('vQty');if(!p||!q)return msg('Vérifiez le produit et la quantité.',true);if(q>Number(p.stock_quantity))return msg('Stock insuffisant. Actualisez pour vérifier.',true);busy=true;try{const r=await sb.rpc('record_sale',{p_product_id:p.id,p_quantity:q});if(r.error)throw r.error;const total=finalPrice(p)*q;$('vCode').value='';$('vQty').value='1';$('vFound').textContent='';$('saleInfo').textContent='Scannez un produit pour afficher le prix.';await refresh();msg('Vente enregistrée. Total : '+money(total))}catch(e){msg('Vente refusée : '+errorText(e),true);await refresh()}finally{busy=false}}
+// Customers are synced from the existing Bon de commande customer table.
+// A sale/customer association is saved only when the new movement can be
+// identified unambiguously; no product-based guessing for historical sales.
+let saleCustomers=[];
+async function loadSaleCustomers(){
+ const select=$('saleCustomer');if(!select)return;
+ const selected=select.value;
+ try{
+  const r=await sb.from('customers').select('id,customer_code,name,phone,delivery_address').order('name');
+  if(r.error)throw r.error;
+  saleCustomers=r.data||[];
+  select.innerHTML='<option value="">— Vente sans client sélectionné —</option>'+saleCustomers.map(c=>`<option value="${safe(c.id)}">${safe(c.customer_code||'')} — ${safe(c.name)}</option>`).join('');
+  if(selected&&saleCustomers.some(c=>String(c.id)===selected))select.value=selected;
+  showSaleCustomerInfo();
+ }catch(e){$('saleCustomerInfo').textContent='Liste clients indisponible : '+errorText(e)}
+}
+function showSaleCustomerInfo(){
+ const c=saleCustomers.find(c=>String(c.id)===String($('saleCustomer').value));
+ $('saleCustomerInfo').textContent=c?('Client : '+(c.name||'')+' • Téléphone : '+(c.phone||'')+' • Adresse : '+(c.delivery_address||'')):'Choisissez un client déjà enregistré dans Bon de commande pour garder ses coordonnées avec cette vente.';
+}
+async function sale(){
+ if(busy)return;
+ const p=product($('vCode').value),q=qty('vQty');
+ if(!p||!q)return msg('Vérifiez le produit et la quantité.',true);
+ if(q>Number(p.stock_quantity))return msg('Stock insuffisant. Actualisez pour vérifier.',true);
+ const chosen=saleCustomers.find(c=>String(c.id)===String($('saleCustomer').value));
+ // Snapshot old IDs first, so later matching cannot accidentally claim a prior sale.
+ let beforeIds=null;
+ if(chosen&&admin){
+  const pre=await sb.from('stock_movements').select('id').eq('movement_type','sale').eq('product_id',p.id).order('id',{ascending:false}).limit(10);
+  if(!pre.error)beforeIds=new Set((pre.data||[]).map(x=>String(x.id)));
+ }
+ busy=true;
+ try{
+  const r=await sb.rpc('record_sale',{p_product_id:p.id,p_quantity:q});
+  if(r.error)throw r.error;
+  const total=finalPrice(p)*q;
+  let linked=false;
+  if(chosen&&beforeIds){
+   const after=await sb.from('stock_movements').select('id,quantity,unit_price,created_at').eq('movement_type','sale').eq('product_id',p.id).order('id',{ascending:false}).limit(10);
+   if(!after.error){
+    const fresh=(after.data||[]).filter(x=>!beforeIds.has(String(x.id))&&Number(x.quantity)===Number(q));
+    if(fresh.length===1){
+     const link={sourceMovementId:fresh[0].id,customerId:chosen.id,orderId:'',client:chosen.name,address:chosen.delivery_address||'',phone:chosen.phone||'',email:''};rememberMovementClient(link);await saveCloudMovementClient(link);linked=true;
+    }
+   }
+  }
+  $('vCode').value='';$('vQty').value='1';$('vFound').textContent='';$('saleInfo').textContent='Scannez un produit pour afficher le prix.';
+  await refresh();
+  msg('Vente enregistrée. Total : '+money(total)+(chosen?(linked?' • Coordonnées client associées sur cet appareil.':' • Client non lié automatiquement : associez-le une fois depuis Historique (aucun lien deviné).'):''));
+ }catch(e){msg('Vente refusée : '+errorText(e),true);await refresh()}
+ finally{busy=false}
+}
 async function scan(t){if(typeof Html5Qrcode==='undefined')return msg('Scanner indisponible. Vérifiez Internet.',true);await stopScan();scanTarget=t;$('scanPanel').classList.remove('hidden');$('scanPanel').scrollIntoView({behavior:'smooth'});try{scanner=new Html5Qrcode('reader');await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:250,height:150}},async decoded=>{const target=scanTarget;if(!target)return;$(target+'Code').value=decoded;await stopScan();if(target==='a'||target==='v')lookup(target);if(target==='bcBarcode')bcFindBarcode();if(target==='p'){const p=product(decoded);if(p)editProduct(p.id)}},()=>{})}catch(e){msg('Caméra indisponible. Autorisez la caméra dans Safari.',true);await stopScan()}}
 async function stopScan(){scanTarget=null;if(scanner){const s=scanner;scanner=null;try{if(s.isScanning)await s.stop()}catch(e){}try{s.clear()}catch(e){}}$('scanPanel').classList.add('hidden')}
 function isoToday(){return new Date().toLocaleDateString('en-CA')}
@@ -290,13 +343,13 @@ docPage.innerHTML=`
 
 <div class="card">
 
-<h2>📄 Documents — STE ABDELLI BUSINESS</h2>
+<h2>📄 Documents — STE ABDELLI BUSINESS · Code client V7</h2>
 
 <p class="notice">Brouillon à vérifier avant émission officielle.</p>
 
 <label>Type de document</label>
 
-<select id="docType">
+<select id="docType" onchange="onDocumentTypeChange()">
 
 <option value="Facture">Facture</option>
 
@@ -310,21 +363,40 @@ docPage.innerHTML=`
 
 <label>Numéro du document</label>
 
-<input id="docNumber" placeholder="Ex : FAC-001">
+<input id="docNumber" placeholder="Généré automatiquement" readonly><p class="small">Numéro attribué à la préparation. Pour une opération Historique, il reste identique à chaque réouverture.</p><input type="hidden" id="docMovementId"><input type="hidden" id="docMovementKind">
 
+<div class="notice"><b>Code client → document prêt</b> : saisissez le code du client enregistré dans Bon de commande. Ses coordonnées et les commandes correspondantes se chargent automatiquement. Choisissez sa commande si plusieurs existent.</div>
+<label>Code client *</label>
+<div class="row"><input id="docClientCode" placeholder="Ex : CL-0001" autocomplete="off" oninput="scheduleDocumentCustomerCode()" onchange="void lookupDocumentCustomerCode()"><button class="blue" type="button" onclick="void lookupDocumentCustomerCode()">🔎 Chercher</button></div>
+<p id="docCodeStatus" class="small">Le code client doit exister dans les fiches Bon de commande.</p>
+<label>Bon de commande existant (coordonnées et produits automatiques)</label>
+<select id="docOrderSelect" onchange="void applyDocumentOrderSelection()"><option value="">— Choisir une commande —</option></select>
+<label>Tous les clients enregistrés — nom, téléphone, adresse automatiques</label>
+<select id="docCustomerSelect" onchange="applyDocumentCustomerSelection()"><option value="">— Choisir un client —</option></select>
+<p class="small" id="docClientHint">Choisissez le client pour les ventes anciennes une première fois. Avec la synchronisation Supabase activée, ses coordonnées sont conservées pour cette opération sur tous les appareils connectés.</p>
 <label>Client</label>
-
 <input id="docClient" placeholder="Nom">
 
 <label>Adresse</label>
 
 <input id="docAddress" placeholder="Adresse">
+<label>Téléphone</label>
+<input id="docPhone" type="tel" placeholder="Téléphone du client">
 
 <label>E-mail</label>
 
 <input id="docEmail" type="email" placeholder="client@email.com">
+<button class="gray full" onclick="saveMovementCustomerInfo()">💾 Mémoriser le client pour cette vente / cet achat</button>
+<p class="small">Les coordonnées sont mémorisées sur cet appareil et synchronisées dans Supabase si la table movement_customer_links est activée. Le chauffeur et le véhicule restent propres à chaque livraison.</p>
 
-<label>Produit</label>
+<div id="docDriverFields" class="hidden"><p class="notice">Transporteur variable : saisissez le chauffeur, sa CIN et le véhicule pour chaque nouvelle livraison. Ces informations ne sont jamais reprises automatiquement de la fiche client.</p>
+<label>Nom du chauffeur</label><input id="docDriver" placeholder="Nom et prénom">
+<label>N° CIN du chauffeur</label><input id="docDriverCin" inputmode="numeric" placeholder="N° carte d’identité">
+<label>Matricule du véhicule</label><input id="docVehicle" placeholder="Immatriculation">
+<label>Date de livraison</label><input id="docDeliveryDate" type="date">
+</div>
+<div id="docOrderLines" class="small"></div>
+<label>Produit (rempli automatiquement depuis la commande)</label>
 
 <input id="docProduct" placeholder="Nom du produit">
 
@@ -336,7 +408,8 @@ docPage.innerHTML=`
 
 <input id="docPrice" type="number" min="0" step=".001">
 
-<button class="blue full" onclick="previewDocument()">📄 Préparer le document</button>
+<button class="blue full" onclick="previewDocument()">📄 Préparer et enregistrer le brouillon</button><button class="gray full" onclick="resetDocumentForNew()">➕ Nouveau document</button>
+<p class="notice">Les factures et bons générés sont des brouillons à vérifier. La numérotation des documents créés manuellement est locale sur cet appareil, non garantie entre plusieurs appareils. Pour une numérotation fiscale centralisée, une table sécurisée Supabase est nécessaire.</p>
 
 </div>
 
@@ -345,42 +418,233 @@ docPage.innerHTML=`
 
 $('app').appendChild(docPage);
 
-function docDetails(){
-
- const type=$('docType').value;
-
- const number=$('docNumber').value.trim();
-
- const client=$('docClient').value.trim();
-
- const item=$('docProduct').value.trim();
-
- const qty=Number($('docQty').value);
-
- const price=Number($('docPrice').value);
-
- if(!number||!client||!item||
-
-    !Number.isSafeInteger(qty)||qty<=0||
-
-    $('docPrice').value===''||
-
-    !Number.isFinite(price)||price<0){
-
-   throw Error('Complétez les informations du document.');
-
+function docTypePrefix(type){return ({'Facture':'FAC','Bon de livraison':'BL','Bon de commande':'BC','Bon de retour':'BR'})[type]||'DOC'}
+function documentNumber(type,movementId,created){
+ const year=created?new Date(created).getFullYear():new Date().getFullYear();
+ const prefix=docTypePrefix(type);
+ if(movementId)return `${prefix}-${year}-${String(movementId).padStart(6,'0')}`;
+ // Local drafts: separate namespace from Supabase movement IDs, preventing accidental overlap.
+ const key='mon_scanner_doc_seq_v2_'+prefix+'_'+year;
+ let n=0;try{n=Number(localStorage.getItem(key)||0)}catch(e){}
+ n+=1;try{localStorage.setItem(key,String(n))}catch(e){throw Error('Stockage local indisponible : impossible de garantir le numéro du brouillon.');}
+ return `${prefix}-${year}-L${String(n).padStart(5,'0')}`;
+}
+function onDocumentTypeChange(){
+ const selected=getDocumentDrafts().find(d=>d.id===currentDocDraftId);
+ if(selected&&selected.type!==$('docType').value){
+  currentDocDraftId=null; $('docNumber').value='';
  }
+ const bl=$('docType').value==='Bon de livraison';
+ $('docDriverFields').classList.toggle('hidden',!bl);
+ // Never reuse a FAC number after switching draft type.
+ if(!currentDocDraftId)$('docNumber').value='';
+}
+function resetDocumentForNew(){
+ currentDocDraftId=null;
+ ['docClientCode','docNumber','docMovementId','docMovementKind','docClient','docAddress','docPhone','docEmail','docProduct','docPrice','docDriver','docDriverCin','docVehicle','docDeliveryDate','docOrderSelect','docCustomerSelect'].forEach(id=>$(id).value='');
+ selectedOrderLines=[];$('docOrderLines').textContent='';$('docCodeStatus').textContent='Saisissez un code client pour charger automatiquement les commandes.';
+ $('docQty').value='1'; $('docPreview').classList.add('hidden');
+ onDocumentTypeChange();
+}
+// Client data is read from the existing Supabase Bon de commande tables.
+// A movement has no reliable customer_id/order_id in the queried schema, so links
+// are made explicitly and remembered locally, never guessed from product or date.
+const DOC_MOVEMENT_CLIENTS='mon_scanner_movement_customers_v3';
+// Cloud links are available once the optional Supabase SQL migration has been applied.
+// Read operations never infer a customer based on product, quantity or timestamp.
+let cloudMovementClientLinks={},cloudMovementLinksEnabled=false;
+async function loadCloudMovementClients(){
+ cloudMovementClientLinks={};cloudMovementLinksEnabled=false;
+ if(!admin||!sb||!movements.length)return;
+ const ids=movements.map(m=>Number(m.id)).filter(Number.isSafeInteger);
+ if(!ids.length)return;
+ try{
+  const r=await sb.from('movement_customer_links').select('movement_id,customer_id,order_id,client_name,client_phone,client_address,client_email').in('movement_id',ids);
+  if(r.error)throw r.error;
+  cloudMovementLinksEnabled=true;
+  for(const x of r.data||[])cloudMovementClientLinks[String(x.movement_id)]={
+   customerId:x.customer_id||'',orderId:x.order_id||'',client:x.client_name||'',phone:x.client_phone||'',address:x.client_address||'',email:x.client_email||''};
+ }catch(e){
+  // Graceful fallback for accounts where the optional new table is not installed.
+  console.warn('Synchronisation clients non activée :',errorText(e));
+ }
+}
+async function saveCloudMovementClient(d){
+ if(!admin||!sb||!d.sourceMovementId||!d.client)return false;
+ const data={movement_id:Number(d.sourceMovementId),customer_id:d.customerId?String(d.customerId):null,
+  order_id:d.orderId?String(d.orderId):null,client_name:d.client,client_phone:d.phone||'',
+  client_address:d.address||'',client_email:d.email||''};
+ if(!Number.isSafeInteger(data.movement_id))return false;
+ try{
+  const r=await sb.from('movement_customer_links').upsert(data,{onConflict:'movement_id'});
+  if(r.error)throw r.error;
+  cloudMovementLinksEnabled=true;
+  cloudMovementClientLinks[String(d.sourceMovementId)]={customerId:d.customerId||'',orderId:d.orderId||'',client:d.client,phone:d.phone||'',address:d.address||'',email:d.email||''};
+  return true;
+ }catch(e){
+  console.warn('Association client non synchronisée :',errorText(e));
+  return false;
+ }
+}
+async function syncLocalMovementClients(){
+ if(!cloudMovementLinksEnabled)return;
+ const local=getMovementClientLinks();
+ const allowed=new Set(movements.map(m=>String(m.id)));
+ for(const [id,d] of Object.entries(local)){
+  if(!allowed.has(id)||cloudMovementClientLinks[id]||!d.client)continue;
+  await saveCloudMovementClient({...d,sourceMovementId:id});
+ }
+}
 
- const ttc=Math.round(qty*price*1000)/1000;
+let documentCustomers=[],documentOrders=[];
+let selectedOrderLines=[], customerCodeTimer=null, customerLookupSerial=0;
+function scheduleDocumentCustomerCode(){
+ clearTimeout(customerCodeTimer);
+ customerCodeTimer=setTimeout(()=>{void lookupDocumentCustomerCode()},500);
+}
+async function lookupDocumentCustomerCode(){
+ const serial=++customerLookupSerial;
+ const code=String($('docClientCode').value||'').trim().toLowerCase();
+ if(!code){$('docCodeStatus').textContent='Saisissez le code du client.';return}
+ if(!documentCustomers.length){await loadDocumentContacts();if(serial!==customerLookupSerial)return}
+ const matches=documentCustomers.filter(c=>String(c.customer_code||'').trim().toLowerCase()===code);
+ if(matches.length!==1){
+   $('docCodeStatus').textContent=matches.length?'Code client non unique. Vérifiez les fiches clients.':'Code client introuvable. Vérifiez dans Bon de commande.';
+   return;
+ }
+ const c=matches[0];
+ $('docCustomerSelect').value=String(c.id);
+ applyDocumentCustomerSelection();
+ $('docCodeStatus').textContent='Client trouvé : '+(c.name||'')+' · '+(c.phone||'')+' · '+(c.delivery_address||'');
+ const matching=documentOrders.filter(o=>String(o.customer_id)===String(c.id));
+ $('docOrderSelect').innerHTML='<option value="">— Choisir une commande du client —</option>'+matching.map(o=>`<option value="${safe(o.id)}">${safe(o.order_number||('BC-'+o.id))} — ${safe(o.status||'')}</option>`).join('');
+ selectedOrderLines=[];$('docOrderLines').textContent='';
+ $('docProduct').value='';$('docQty').value='1';$('docPrice').value='';
+ if(matching.length===1){$('docOrderSelect').value=String(matching[0].id);await applyDocumentOrderSelection()}
+ else if(matching.length>1){$('docCodeStatus').textContent+=' · Choisissez la commande correspondante ('+matching.length+' commandes).'}
+ else $('docCodeStatus').textContent+=' · Aucune commande enregistrée pour ce client.';
+}
+async function loadSelectedOrderLines(orderId){
+ selectedOrderLines=[];$('docOrderLines').textContent='';
+ const r=await sb.from('customer_order_items').select('product_id,quantity,unit_price_ttc').eq('order_id',orderId);
+ if(r.error){msg('Articles de commande non chargés : '+errorText(r.error),true);return}
+ selectedOrderLines=(r.data||[]).map(i=>({item:products.find(p=>String(p.id)===String(i.product_id))?.name||'Produit #'+i.product_id,qty:Number(i.quantity),price:Number(i.unit_price_ttc)}));
+ if(!selectedOrderLines.length){$('docOrderLines').textContent='Commande sans articles : vérifiez les données.';return}
+ $('docOrderLines').textContent='Articles repris du Bon de commande : '+selectedOrderLines.map(l=>l.item+' × '+l.qty).join(' · ');
+ const first=selectedOrderLines[0];
+ $('docProduct').value=first.item;$('docQty').value=String(first.qty);$('docPrice').value=String(first.price);
+}
 
- const hasVat=['Facture','Bon de livraison'].includes(type);
-
+function getMovementClientLinks(){try{return JSON.parse(localStorage.getItem(DOC_MOVEMENT_CLIENTS)||'{}')||{}}catch(e){return {}}}
+function rememberMovementClient(d){
+ if(!d.sourceMovementId||!String(d.client||'').trim())return;
+ try{const links=getMovementClientLinks();links[String(d.sourceMovementId)]={customerId:String(d.customerId),orderId:d.orderId||'',client:d.client,address:d.address,phone:d.phone,email:d.email};localStorage.setItem(DOC_MOVEMENT_CLIENTS,JSON.stringify(links))}catch(e){msg('Association client non conservée sur cet appareil.',true)}
+}
+async function loadDocumentContacts(){
+ const customerSelect=$('docCustomerSelect'),orderSelect=$('docOrderSelect');
+ if(!customerSelect||!orderSelect)return;
+ const oldCustomer=customerSelect.value,oldOrder=orderSelect.value;
+ const [cr,orr]=await Promise.all([
+   sb.from('customers').select('id,customer_code,name,phone,delivery_address').order('id'),
+   sb.from('customer_orders').select('id,order_number,customer_id,delivery_date,delivery_address,status').order('id',{ascending:false}).limit(250)
+ ]);
+ if(cr.error||orr.error){msg('Chargement des clients/commandes : '+errorText(cr.error||orr.error),true);return}
+ documentCustomers=cr.data||[];documentOrders=orr.data||[];
+ customerSelect.innerHTML='<option value="">— Choisir un client —</option>'+documentCustomers.map(c=>`<option value="${safe(c.id)}">${safe(c.customer_code||'')} — ${safe(c.name)}</option>`).join('');
+ orderSelect.innerHTML='<option value="">— Choisir une commande —</option>'+documentOrders.map(o=>{const c=documentCustomers.find(x=>String(x.id)===String(o.customer_id));return `<option value="${safe(o.id)}">${safe(o.order_number||('BC-'+o.id))} — ${safe(c?.name||'Client')}</option>`}).join('');
+ if(oldCustomer&&documentCustomers.some(c=>String(c.id)===oldCustomer))customerSelect.value=oldCustomer;
+ if(oldOrder&&documentOrders.some(o=>String(o.id)===oldOrder))orderSelect.value=oldOrder;
+}
+async function saveMovementCustomerInfo(){
+ if(!admin)return;
+ const sourceMovementId=$('docMovementId').value;
+ if(!sourceMovementId)return msg('Ouvrez d’abord une vente ou un achat depuis Historique.',true);
+ const client=$('docClient').value.trim();
+ if(!client)return msg('Indiquez le nom du client avant de mémoriser ses coordonnées.',true);
+ // Keep only client fields; driver/CIN/vehicle are never associated with a customer.
+ const choice=documentCustomers.find(c=>String(c.id)===String($('docCustomerSelect').value));
+ const customerId=choice&&choice.name===client?String(choice.id):'';
+ const link={sourceMovementId,customerId,orderId:customerId?$('docOrderSelect').value:'',client,address:$('docAddress').value.trim(),phone:$('docPhone').value.trim(),email:$('docEmail').value.trim()};
+ rememberMovementClient(link);
+ const synced=await saveCloudMovementClient(link);
+ msg(synced?'Coordonnées du client enregistrées et synchronisées avec Supabase.':'Coordonnées enregistrées sur cet appareil. Synchronisation Supabase indisponible : activer la migration SQL.');
+}
+function applyDocumentCustomerSelection(){
+ const c=documentCustomers.find(x=>String(x.id)===String($('docCustomerSelect').value));
+ if(!c)return;
+ $('docClientCode').value=c.customer_code||'';
+ $('docClient').value=c.name||'';
+ $('docAddress').value=c.delivery_address||'';
+ $('docPhone').value=c.phone||'';
+ const movementId=$('docMovementId').value;
+ if(movementId){const link={sourceMovementId:movementId,customerId:c.id,orderId:$('docOrderSelect').value,client:c.name,address:$('docAddress').value,phone:c.phone,email:$('docEmail').value};rememberMovementClient(link);void saveCloudMovementClient(link)}
+ $('docClientHint').textContent='Coordonnées reprises de la fiche client enregistrée dans Bon de commande.';
+}
+async function applyDocumentOrderSelection(){
+ const o=documentOrders.find(x=>String(x.id)===String($('docOrderSelect').value));
+ if(!o){selectedOrderLines=[];$('docOrderLines').textContent='';return}
+ $('docCustomerSelect').value=String(o.customer_id);
+ applyDocumentCustomerSelection();
+ $('docAddress').value=o.delivery_address||$('docAddress').value;
+ const c=documentCustomers.find(x=>String(x.id)===String(o.customer_id));
+ if($('docMovementId').value&&c){const link={sourceMovementId:$('docMovementId').value,customerId:c.id,orderId:o.id,client:c.name,address:$('docAddress').value,phone:c.phone,email:$('docEmail').value};rememberMovementClient(link);void saveCloudMovementClient(link)}
+ $('docClientHint').textContent='Coordonnées et adresse reprises du Bon de commande '+(o.order_number||o.id)+'. Vérifiez que cette commande correspond à l’opération.';
+ await loadSelectedOrderLines(o.id);
+}
+function restoreMovementClient(movementId){
+ const link=cloudMovementClientLinks[String(movementId)]||getMovementClientLinks()[String(movementId)];if(!link)return;
+ if(link.customerId&&documentCustomers.some(c=>String(c.id)===String(link.customerId))){$('docCustomerSelect').value=String(link.customerId);applyDocumentCustomerSelection()}
+ if(link.orderId){$('docOrderSelect').value=String(link.orderId);const o=documentOrders.find(x=>String(x.id)===String(link.orderId));if(o)applyDocumentOrderSelection()}
+ if(!link.customerId||!documentCustomers.some(c=>String(c.id)===String(link.customerId))){$('docClient').value=link.client||'';$('docAddress').value=link.address||'';$('docPhone').value=link.phone||'';$('docEmail').value=link.email||''}
+}
+async function convertMovementToDocument(id,type){
+ if(!admin)return;
+ const m=movements.find(x=>Number(x.id)===Number(id));
+ if(!m||!['sale','purchase'].includes(m.movement_type))return msg('Vente ou achat introuvable.',true);
+ const p=products.find(x=>String(x.id)===String(m.product_id));
+ const draft=getDocumentDrafts().find(d=>String(d.sourceMovementId)===String(id)&&d.type===type);
+ tab('documents');
+ if(draft){fillDocumentDraft(draft);await loadDocumentContacts();msg('Brouillon existant chargé : le numéro est conservé.');return;}
+ resetDocumentForNew();
+ $('docType').value=type;
+ $('docMovementId').value=String(id);
+ $('docMovementKind').value=m.movement_type;
+ $('docNumber').value=documentNumber(type,id,m.created_at);
+ $('docProduct').value=p?.name||'Produit #'+m.product_id;
+ $('docQty').value=String(Number(m.quantity));
+ $('docPrice').value=String(Number(m.unit_price));
+ if(type==='Bon de livraison')$('docDeliveryDate').value=new Date().toISOString().slice(0,10);
+ onDocumentTypeChange();
+ await loadDocumentContacts();
+ restoreMovementClient(id);
+ $('docClient').focus();
+ msg(m.movement_type==='purchase'?'Achat chargé. Vérifiez les mentions du fournisseur : ce brouillon ne constitue pas une facture émise par le fournisseur.':'Vente chargée. Complétez le client, puis préparez le brouillon. Le stock ne change pas.');
+}
+function docDetails(){
+ const type=$('docType').value;
+ let number=$('docNumber').value.trim();
+ const client=$('docClient').value.trim();
+ const item=$('docProduct').value.trim();
+ const qty=Number($('docQty').value);
+ const price=Number($('docPrice').value);
+ if(!client||!item||!Number.isFinite(qty)||qty<=0||$('docPrice').value===''||!Number.isFinite(price)||price<0){
+   throw Error('Complétez le client, le produit, la quantité et le prix.');
+ }
+ const driver=$('docDriver').value.trim(),cin=$('docDriverCin').value.trim(),vehicle=$('docVehicle').value.trim();
+ const deliveryDate=$('docDeliveryDate').value;
+ if(type==='Bon de livraison'&&(!driver||!cin||!vehicle||!deliveryDate))throw Error('Complétez le chauffeur, sa CIN, le véhicule et la date de livraison.');
+ if(type==='Bon de livraison'&&!/^\d{8}$/.test(cin))throw Error('Le N° CIN du chauffeur doit comporter 8 chiffres.');
+ const sourceMovementId=$('docMovementId').value||null,sourceKind=$('docMovementKind').value||'';
+ if(!number){number=documentNumber(type,sourceMovementId);$('docNumber').value=number;}
+ const selectedOrder=documentOrders.find(o=>String(o.id)===String($('docOrderSelect').value));
+ if(selectedOrder&&!selectedOrderLines.length)throw Error('Les articles du Bon de commande ne sont pas chargés. Choisissez la commande de nouveau.');
+ const lines=selectedOrder?selectedOrderLines.map(x=>({...x})): [{item,qty,price}];
+ const ttc=Math.round(lines.reduce((sum,l)=>sum+l.qty*l.price,0)*1000)/1000;
+ // Estimated 19% display remains from the original app; not a validated tax invoice.
+ const hasVat=['Facture','Bon de livraison'].includes(type)&&sourceKind!=='purchase';
  const ht=hasVat?Math.round(ttc/1.19*1000)/1000:ttc;
-
  const vat=hasVat?Math.round((ttc-ht)*1000)/1000:0;
-
- return {type,number,client,address:$('docAddress').value.trim(),email:$('docEmail').value.trim(),item,qty,price,ttc,ht,vat,hasVat};
-
+ return {type,number,lines,clientCode:$('docClientCode').value.trim(),client,address:$('docAddress').value.trim(),phone:$('docPhone').value.trim(),email:$('docEmail').value.trim(),customerId:$('docCustomerSelect').value||null,orderId:$('docOrderSelect').value||null,item,qty,price,ttc,ht,vat,hasVat,driver,cin,vehicle,deliveryDate,sourceMovementId,sourceKind};
 }
 
 function docHtml(d){
@@ -394,17 +658,20 @@ function docHtml(d){
 <p>Matricule fiscal : 1735982/Q/M/000</p>
  <h2>${safe(d.type)} — BROUILLON</h2>
 
- <p>N° ${safe(d.number)} — ${date}</p>
+ <p>N° ${safe(d.number)} — ${safe(date)}</p>
+ ${d.sourceMovementId?`<p class="small">Origine : ${safe(d.sourceKind==='purchase'?'Achat':'Vente')} n° ${safe(d.sourceMovementId)} — sans nouveau mouvement de stock.</p>`:''}
+ ${d.sourceKind==='purchase'?'<p class="notice">Copie de travail d’un achat : ne constitue pas une facture émise par le fournisseur.</p>':''}
 
  <p><b>Client :</b> ${safe(d.client)}</p>
-
- <p>${safe(d.address||'')}</p>
+ <p><b>Adresse :</b> ${safe(d.address||'')}</p>
+ ${d.phone?`<p><b>Téléphone :</b> ${safe(d.phone)}</p>`:''}
+ ${d.clientCode?`<p><b>Code client :</b> ${safe(d.clientCode)}</p>`:''}
+ ${d.orderNumber?`<p><b>Bon de commande :</b> ${safe(d.orderNumber)}</p>`:''}
 
  <hr>
 
- <p><b>Produit :</b> ${safe(d.item)}</p>
-
- <p>Quantité : ${d.qty}</p>
+ <table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Produit</th><th>Qté</th><th>Prix TTC</th><th>Total</th></tr></thead><tbody>${(d.lines?.length?d.lines:[{item:d.item,qty:d.qty,price:d.price}]).map(l=>`<tr><td>${safe(l.item)}</td><td style="text-align:center">${safe(l.qty)}</td><td>${money(l.price)}</td><td>${money(l.qty*l.price)}</td></tr>`).join('')}</tbody></table>
+ ${d.type==='Bon de livraison'?`<p><b>Chauffeur :</b> ${safe(d.driver||'')}</p><p><b>N° CIN :</b> ${safe(d.cin||'')}</p><p><b>Véhicule :</b> ${safe(d.vehicle||'')}</p><p><b>Date de livraison :</b> ${safe(d.deliveryDate||'')}</p>`:''}
 
  <p>Prix unitaire TTC : ${money(d.price)}</p>
 
@@ -428,6 +695,7 @@ function previewDocument(){
 
    const d=docDetails();
 
+    d.orderNumber = documentOrders.find(o=>String(o.id)===String(d.orderId))?.order_number||'';
    saveDocumentDraft(d);
    const el=$('docPreview');
 
@@ -436,7 +704,8 @@ function previewDocument(){
    el.innerHTML=docHtml(d)+
 
    `<button class="blue full" onclick="printDocument()">🖨️ Imprimer A4 / PDF</button>
-     <button class="green full" onclick="shareDocument()">📲 Envoyer WhatsApp</button>
+     <button class="green full" onclick="shareDocument()">📲 Envoyer WhatsApp (texte)</button>
+     <button class="blue full" onclick="shareDocumentPDF()">📎 Partager le PDF (WhatsApp / Fichiers)</button>
 
     <button class="gray full" onclick="emailDocument()">📧 Envoyer par e-mail</button>
     <button class="gray full" onclick="editCurrentDocument()">✏️ Corriger</button>
@@ -505,12 +774,15 @@ function saveDocumentDraft(d){
  const draft={...d,id,date:new Date().toLocaleDateString('fr-TN')};
  const idx=list.findIndex(x=>x.id===id);
  if(idx<0)list.unshift(draft);else list[idx]=draft;
- if(storeDocumentDrafts(list)){currentDocDraftId=id;renderDocumentDrafts()}
+  if(storeDocumentDrafts(list)){currentDocDraftId=id;rememberMovementClient(d);if(d.sourceMovementId)void saveCloudMovementClient(d);renderDocumentDrafts()}
 }
 function fillDocumentDraft(d){
- const ids={docType:d.type,docNumber:d.number,docClient:d.client,docAddress:d.address||'',docEmail:d.email||'',docProduct:d.item,docQty:d.qty,docPrice:d.price};
+ const ids={docClientCode:d.clientCode||'',docType:d.type,docNumber:d.number,docClient:d.client,docAddress:d.address||'',docPhone:d.phone||'',docEmail:d.email||'',docCustomerSelect:d.customerId||'',docOrderSelect:d.orderId||'',docProduct:d.item,docQty:d.qty,docPrice:d.price,docDriver:d.driver||'',docDriverCin:d.cin||'',docVehicle:d.vehicle||'',docDeliveryDate:d.deliveryDate||'',docMovementId:d.sourceMovementId||'',docMovementKind:d.sourceKind||''};
  Object.entries(ids).forEach(([id,value])=>$(id).value=value);
+ selectedOrderLines=(d.lines&&d.orderId)?d.lines.map(x=>({...x})):[];
+ $('docOrderLines').textContent=selectedOrderLines.length?'Articles de la commande chargés depuis le brouillon.':'';
  currentDocDraftId=d.id;
+ onDocumentTypeChange();
  $('docPreview').classList.add('hidden');
  $('docType').scrollIntoView({behavior:'smooth'});
 }
@@ -1088,7 +1360,8 @@ tab = function(id) {
 
   bcOldTab(id);
 
-  if (id === 'commande') bcLoad();
+    if (id === 'commande') bcLoad();
+  if (id === 'documents') loadDocumentContacts();
 
 };
  function bcFindBarcode() {
@@ -1477,8 +1750,46 @@ async function correctOrderDetails(id){
   await bcLoad();msg('Commande corrigée.');
  }catch(e){msg('Correction impossible : '+errorText(e),true)}finally{busy=false}
 }
+function getDocumentPdfFile(){
+ const d=docDetails();
+ if(!window.jspdf?.jsPDF)throw Error('Module PDF indisponible : vérifiez la connexion Internet. Utilisez Imprimer A4 / PDF.');
+ const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+ let y=19;
+ const add=(value,weight='normal')=>{
+  pdf.setFont('helvetica',weight);pdf.setFontSize(weight==='bold'?13:11);
+  const parts=pdf.splitTextToSize(String(value),174);
+  for(const line of parts){if(y>273){pdf.addPage();y=19}pdf.text(line,18,y);y+=7;}
+ };
+ add('STE ABDELLI BUSINESS','bold');add('MEDENINE - TUNISIE');y+=5;
+ add(d.type+' - BROUILLON','bold');add('Numero : '+d.number);add('Date : '+new Date().toLocaleDateString('fr-TN'));
+ if(d.sourceMovementId)add('Operation : '+(d.sourceKind==='purchase'?'Achat':'Vente')+' #'+d.sourceMovementId);
+ if(d.sourceKind==='purchase')add('Copie de travail - facture fournisseur non emise par cette application');
+ y+=4;add('Client : '+d.client);if(d.clientCode)add('Code client : '+d.clientCode);if(d.address)add('Adresse : '+d.address);if(d.phone)add('Telephone : '+d.phone);
+ if(d.orderId)add('Commande : '+(documentOrders.find(o=>String(o.id)===String(d.orderId))?.order_number||d.orderId));
+ for(const l of (d.lines?.length?d.lines:[{item:d.item,qty:d.qty,price:d.price}]))add(l.item+' : '+l.qty+' x '+money(l.price)+' = '+money(l.qty*l.price));
+ if(d.type==='Bon de livraison'){
+  y+=3;add('Chauffeur : '+d.driver);add('CIN chauffeur : '+d.cin);add('Vehicule : '+d.vehicle);add('Date livraison : '+d.deliveryDate);
+ }
+ y+=4;if(d.hasVat){add('Total HT estime (TVA 19% a verifier) : '+money(d.ht));add('TVA estimee : '+money(d.vat));}
+ add('Total TTC : '+money(d.ttc),'bold');y+=7;
+ add('DOCUMENT PROVISOIRE - informations fiscales a verifier');
+ const file=new File([pdf.output('blob')],d.number.replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf',{type:'application/pdf'});
+ return {d,file};
+}
+async function shareDocumentPDF(){
+ if(!admin)return;
+ try{
+  const {d,file}=getDocumentPdfFile();
+  if(navigator.canShare?.({files:[file]})&&navigator.share){
+   try{await navigator.share({files:[file],title:d.type+' '+d.number,text:'Document brouillon à vérifier'});return}
+   catch(e){if(e.name==='AbortError')return;}
+  }
+  const blob=URL.createObjectURL(file),a=document.createElement('a');a.href=blob;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(blob),10000);
+  msg('PDF téléchargé. Ouvrez-le dans Fichiers et partagez-le avec WhatsApp.');
+ }catch(e){msg('Partage PDF impossible : '+errorText(e),true)}
+}
 function shareDocument(){
- try{const d=docDetails();whatsappText(d.type+' '+d.number,['Client : '+d.client,'Produit : '+d.item,'Quantité : '+d.qty,'Prix unitaire : '+money(d.price),'Total TTC : '+money(d.ttc),'Brouillon à vérifier']);}
+ try{const d=docDetails();whatsappText(d.type+' '+d.number,['Client : '+d.client,...(d.phone?['Téléphone : '+d.phone]:[]),'Produit : '+d.item,'Quantité : '+d.qty,'Prix unitaire : '+money(d.price),'Total TTC : '+money(d.ttc),...(d.type==='Bon de livraison'?['Chauffeur : '+d.driver,'CIN : '+d.cin,'Véhicule : '+d.vehicle,'Livraison : '+d.deliveryDate]:[]),'Brouillon à vérifier']);}
  catch(e){msg(errorText(e),true)}
 }
 // For plain GitHub Pages, request a fresh document on each online navigation.
