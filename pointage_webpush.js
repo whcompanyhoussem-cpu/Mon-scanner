@@ -5,7 +5,7 @@
   const message = text => { const x=byId('empPushStatus'); if(x) x.textContent=text; };
   const enc = value => String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   // Publish this ONLY after creating a matching VAPID key pair. Never expose the private key.
-  const VAPID_PUBLIC_KEY = 'REPLACE_WITH_REAL_VAPID_PUBLIC_KEY';
+  const VAPID_PUBLIC_KEY = window.MON_SCANNER_VAPID_PUBLIC_KEY;
   const decode = key => {
     const normalized=key.replace(/-/g,'+').replace(/_/g,'/');
     const raw=atob(normalized+'='.repeat((4-normalized.length%4)%4));
