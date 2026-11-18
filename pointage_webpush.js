@@ -63,7 +63,21 @@
         throw Error('Web Push non pris en charge dans ce contexte. Sur iPhone, ouvrir depuis l’écran d’accueil.');
       const reg=await navigator.serviceWorker.getRegistration('./');
       const sub=reg?await reg.pushManager.getSubscription():null;
-      const q=await sb.from('attendance_web_subscriptions').select('id').eq('user_id',currentUser.id);
+      if (sub?.options?.applicationServerKey) {
+
+  const bytes = new Uint8Array(sub.options.applicationServerKey);
+
+  const key = btoa(String.fromCharCode(...bytes))
+
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+
+  show('VAPID_PUBLIC_KEY : ' + key);
+
+  return;
+
+}
+      const q=await 
+sb.from('hr_push_subscriptions').select('id').eq('user_id',currentUser.id);
       if(q.error)throw q.error;
       const rows=q.data||[];
       show('Autorisation iPhone : '+Notification.permission+' | Service Worker : '+(reg?'oui':'non')+
