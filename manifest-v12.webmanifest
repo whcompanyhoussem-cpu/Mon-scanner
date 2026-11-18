@@ -1,0 +1,23 @@
+
+
+{
+
+  "name": "Mon Scanner Pro V12",
+
+  "short_name": "Scanner V12",
+
+  "id": "/Mon-scanner/index-v12.html",
+
+  "start_url": "/Mon-scanner/index-v12.html",
+
+  "scope": "/Mon-scanner/",
+
+  "display": "standalone",
+
+  "background_color": "#f1f5f9",
+
+  "theme_color": "#0f172a",
+
+  "lang": "fr"
+
+}
